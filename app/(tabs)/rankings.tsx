@@ -1,10 +1,10 @@
 import { View, Text, StyleSheet } from 'react-native';
 
-export default function DiscoverScreen() {
+export default function RankingsScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Hello World!</Text>
-      <Text style={styles.subtitle}>Discover Tab</Text>
+      <Text style={styles.subtitle}>Rankings Tab</Text>
     </View>
   );
 }

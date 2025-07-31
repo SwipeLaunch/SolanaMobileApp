@@ -1,10 +1,10 @@
 import { View, Text, StyleSheet } from 'react-native';
 
-export default function DiscoverScreen() {
+export default function SuperstarScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Hello World!</Text>
-      <Text style={styles.subtitle}>Discover Tab</Text>
+      <Text style={styles.subtitle}>Superstar Tab</Text>
     </View>
   );
 }
