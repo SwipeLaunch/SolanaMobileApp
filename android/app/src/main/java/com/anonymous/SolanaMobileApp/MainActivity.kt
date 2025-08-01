@@ -365,18 +365,21 @@ class MainActivity : AppCompatActivity() {
         discoverContent.visibility = View.VISIBLE
         profilePage.visibility = View.GONE
         presalePage.visibility = View.GONE
+        leaderboardPage.visibility = View.GONE
     }
     
     private fun showProfileTab() {
         discoverContent.visibility = View.GONE
         profilePage.visibility = View.VISIBLE
         presalePage.visibility = View.GONE
+        leaderboardPage.visibility = View.GONE
     }
     
     private fun showPresaleTab() {
         discoverContent.visibility = View.GONE
         profilePage.visibility = View.GONE
         presalePage.visibility = View.VISIBLE
+        leaderboardPage.visibility = View.GONE
         updateWalletBalance()
     }
     
