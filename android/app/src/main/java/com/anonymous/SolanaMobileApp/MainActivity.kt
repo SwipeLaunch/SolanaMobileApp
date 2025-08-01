@@ -46,6 +46,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var walletBalanceText: TextView
     private lateinit var presaleAdapter: PresaleAdapter
     
+    // Leaderboard page views
+    private lateinit var leaderboardPage: View
+    private lateinit var tabTokenLaunched: TextView
+    private lateinit var tabSLStaked: TextView
+    private lateinit var tabMostLikes: TextView
+    private lateinit var tabMostLaunched: TextView
+    private lateinit var tokenLaunchedRecyclerView: RecyclerView
+    private lateinit var slStakedRecyclerView: RecyclerView
+    private lateinit var mostLikesRecyclerView: RecyclerView
+    private lateinit var mostLaunchedRecyclerView: RecyclerView
+    
     // Sample token data
     private val tokens = listOf(
         TokenData("1", "MOON Token", "cryptoking", "🚀 To the moon! The next big thing in DeFi. Diamond hands only! 💎🙌", 1247,
@@ -77,6 +88,39 @@ class MainActivity : AppCompatActivity() {
         PresaleTokenData("ps5", "GALAXY Token", "GLXY", "🌌 Cross-chain gaming token for the metaverse ecosystem", 
                         750_000_000L, 67.3, System.currentTimeMillis(), System.currentTimeMillis() + (3 * 24 * 60 * 60 * 1000L), 
                         "Creator5", "TokenAddr5")
+    )
+    
+    // Sample leaderboard data
+    private val tokenLaunchedLeaderboard = listOf(
+        TokenLaunchedData(1, "MOON Token", "MOON", 2_500_000.0, 500_000_000.0, "cryptoking", System.currentTimeMillis()),
+        TokenLaunchedData(2, "ROCKET Coin", "ROCKET", 1_800_000.0, 360_000_000.0, "spaceexplorer", System.currentTimeMillis()),
+        TokenLaunchedData(3, "DIAMOND", "DMD", 1_200_000.0, 240_000_000.0, "gemhunter", System.currentTimeMillis()),
+        TokenLaunchedData(4, "SOLAR Power", "SOLAR", 950_000.0, 190_000_000.0, "greenenergy", System.currentTimeMillis()),
+        TokenLaunchedData(5, "GALAXY Token", "GLXY", 750_000.0, 150_000_000.0, "metaverse", System.currentTimeMillis())
+    )
+    
+    private val slStakedLeaderboard = listOf(
+        SLTokenStakedData(1, "ABC123...XYZ789", "cryptoking", "cryptoking.sol", 2_500_000.0, 90 * 24 * 60 * 60 * 1000L, 125_000.0),
+        SLTokenStakedData(2, "DEF456...UVW012", "moonwhale", null, 1_800_000.0, 60 * 24 * 60 * 60 * 1000L, 90_000.0),
+        SLTokenStakedData(3, "GHI789...RST345", null, "trader.sol", 1_200_000.0, 45 * 24 * 60 * 60 * 1000L, 60_000.0),
+        SLTokenStakedData(4, "JKL012...OPQ678", "degenape", null, 950_000.0, 30 * 24 * 60 * 60 * 1000L, 47_500.0),
+        SLTokenStakedData(5, "MNO345...TUV901", null, "hodler.sol", 750_000.0, 15 * 24 * 60 * 60 * 1000L, 37_500.0)
+    )
+    
+    private val creatorMostLikesLeaderboard = listOf(
+        CreatorMostLikesData(1, "cryptoking", "cryptoking", 1_250_000, 15, 83_333.0, "MOON Token", 987_654),
+        CreatorMostLikesData(2, "memelord", "memelord99", 950_000, 12, 79_167.0, "DOGE 2.0", 456_789),
+        CreatorMostLikesData(3, "gemhunter", "gemhunter", 850_000, 10, 85_000.0, "DIAMOND", 234_567),
+        CreatorMostLikesData(4, "spaceexplorer", "spaceX_fan", 720_000, 8, 90_000.0, "ROCKET Coin", 345_678),
+        CreatorMostLikesData(5, "catwhisperer", "catwhisperer", 650_000, 9, 72_222.0, "SOL CAT", 123_456)
+    )
+    
+    private val creatorMostLaunchedLeaderboard = listOf(
+        CreatorMostLaunchedData(1, "prolific_dev", "prolific_dev", 25, 5_250_000.0, 0.72, "MEGA Token", 1_500_000.0),
+        CreatorMostLaunchedData(2, "token_factory", "token_factory", 18, 3_200_000.0, 0.67, "SUPER Coin", 800_000.0),
+        CreatorMostLaunchedData(3, "cryptoking", "cryptoking", 15, 4_100_000.0, 0.80, "MOON Token", 2_500_000.0),
+        CreatorMostLaunchedData(4, "serial_launcher", "serial_launcher", 12, 2_100_000.0, 0.58, "WINNER Token", 450_000.0),
+        CreatorMostLaunchedData(5, "defi_builder", "defi_builder", 10, 1_800_000.0, 0.70, "YIELD Token", 350_000.0)
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -121,6 +165,20 @@ class MainActivity : AppCompatActivity() {
         }
         presaleRecyclerView.layoutManager = LinearLayoutManager(this)
         presaleRecyclerView.adapter = presaleAdapter
+        
+        // Initialize leaderboard page views
+        leaderboardPage = findViewById(R.id.leaderboardPage)
+        tabTokenLaunched = leaderboardPage.findViewById(R.id.tabTokenLaunched)
+        tabSLStaked = leaderboardPage.findViewById(R.id.tabSLStaked)
+        tabMostLikes = leaderboardPage.findViewById(R.id.tabMostLikes)
+        tabMostLaunched = leaderboardPage.findViewById(R.id.tabMostLaunched)
+        tokenLaunchedRecyclerView = leaderboardPage.findViewById(R.id.tokenLaunchedRecyclerView)
+        slStakedRecyclerView = leaderboardPage.findViewById(R.id.slStakedRecyclerView)
+        mostLikesRecyclerView = leaderboardPage.findViewById(R.id.mostLikesRecyclerView)
+        mostLaunchedRecyclerView = leaderboardPage.findViewById(R.id.mostLaunchedRecyclerView)
+        
+        setupLeaderboardTabs()
+        setupLeaderboardRecyclerViews()
     }
     
     private fun setupWalletManager() {
@@ -192,7 +250,7 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_rankings -> {
-                    showToast("Rankings Tab")
+                    showLeaderboardTab()
                     true
                 }
                 R.id.nav_activities -> {
@@ -399,6 +457,83 @@ class MainActivity : AppCompatActivity() {
             showToast("✅ Purchase successful!\nReceived ${String.format("%.0f", tokensReceived)} ${token.symbol}")
             
             // In real app, update token progress and user's balance
+        }
+    }
+    
+    private fun showLeaderboardTab() {
+        discoverContent.visibility = View.GONE
+        profilePage.visibility = View.GONE
+        presalePage.visibility = View.GONE
+        leaderboardPage.visibility = View.VISIBLE
+    }
+    
+    private fun setupLeaderboardTabs() {
+        tabTokenLaunched.setOnClickListener { showLeaderboardTab("token_launched") }
+        tabSLStaked.setOnClickListener { showLeaderboardTab("sl_staked") }
+        tabMostLikes.setOnClickListener { showLeaderboardTab("most_likes") }
+        tabMostLaunched.setOnClickListener { showLeaderboardTab("most_launched") }
+    }
+    
+    private fun setupLeaderboardRecyclerViews() {
+        // Token Launched RecyclerView
+        val tokenLaunchedAdapter = TokenLaunchedAdapter(tokenLaunchedLeaderboard)
+        tokenLaunchedRecyclerView.layoutManager = LinearLayoutManager(this)
+        tokenLaunchedRecyclerView.adapter = tokenLaunchedAdapter
+        
+        // SL Staked RecyclerView
+        val slStakedAdapter = SLStakedAdapter(slStakedLeaderboard)
+        slStakedRecyclerView.layoutManager = LinearLayoutManager(this)
+        slStakedRecyclerView.adapter = slStakedAdapter
+        
+        // Most Likes RecyclerView
+        val mostLikesAdapter = CreatorLikesAdapter(creatorMostLikesLeaderboard)
+        mostLikesRecyclerView.layoutManager = LinearLayoutManager(this)
+        mostLikesRecyclerView.adapter = mostLikesAdapter
+        
+        // Most Launched RecyclerView
+        val mostLaunchedAdapter = CreatorLaunchedAdapter(creatorMostLaunchedLeaderboard)
+        mostLaunchedRecyclerView.layoutManager = LinearLayoutManager(this)
+        mostLaunchedRecyclerView.adapter = mostLaunchedAdapter
+        
+        // Set default tab to Token Launched
+        showLeaderboardTab("token_launched")
+    }
+    
+    private fun showLeaderboardTab(tabType: String) {
+        // Reset all tab styles
+        listOf(tabTokenLaunched, tabSLStaked, tabMostLikes, tabMostLaunched).forEach { tab ->
+            tab.setTextColor(0xFF666666.toInt())
+            tab.setBackgroundColor(0xFFF0F0F0.toInt())
+        }
+        
+        // Hide all RecyclerViews
+        tokenLaunchedRecyclerView.visibility = View.GONE
+        slStakedRecyclerView.visibility = View.GONE
+        mostLikesRecyclerView.visibility = View.GONE
+        mostLaunchedRecyclerView.visibility = View.GONE
+        
+        // Show selected tab and RecyclerView
+        when (tabType) {
+            "token_launched" -> {
+                tabTokenLaunched.setTextColor(0xFF9945FF.toInt())
+                tabTokenLaunched.setBackgroundColor(0xFF9945FF20.toInt())
+                tokenLaunchedRecyclerView.visibility = View.VISIBLE
+            }
+            "sl_staked" -> {
+                tabSLStaked.setTextColor(0xFF9945FF.toInt())
+                tabSLStaked.setBackgroundColor(0xFF9945FF20.toInt())
+                slStakedRecyclerView.visibility = View.VISIBLE
+            }
+            "most_likes" -> {
+                tabMostLikes.setTextColor(0xFF9945FF.toInt())
+                tabMostLikes.setBackgroundColor(0xFF9945FF20.toInt())
+                mostLikesRecyclerView.visibility = View.VISIBLE
+            }
+            "most_launched" -> {
+                tabMostLaunched.setTextColor(0xFF9945FF.toInt())
+                tabMostLaunched.setBackgroundColor(0xFF9945FF20.toInt())
+                mostLaunchedRecyclerView.visibility = View.VISIBLE
+            }
         }
     }
     

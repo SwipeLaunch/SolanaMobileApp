@@ -45,6 +45,14 @@
             android:layout_height="match_parent"
             android:visibility="gone" />
 
+        <!-- Leaderboard content -->
+        <include
+            android:id="@+id/leaderboardPage"
+            layout="@layout/leaderboard_page"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
     </FrameLayout>
 
     <!-- Bottom Navigation -->

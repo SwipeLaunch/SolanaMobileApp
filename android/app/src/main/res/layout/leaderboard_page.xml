@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#f8f9fa">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp"
+        android:background="#ffffff"
+        android:elevation="2dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🏆 Leaderboard"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#333333" />
+
+    </LinearLayout>
+
+    <!-- Tab Layout -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:background="#ffffff"
+        android:elevation="1dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/tabTokenLaunched"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Token Launched"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#9945FF"
+                android:background="#9945FF20"
+                android:padding="12dp"
+                android:layout_marginEnd="8dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/tabSLStaked"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SL Staked"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:background="#f0f0f0"
+                android:padding="12dp"
+                android:layout_marginEnd="8dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/tabMostLikes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Most Likes"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:background="#f0f0f0"
+                android:padding="12dp"
+                android:layout_marginEnd="8dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/tabMostLaunched"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Most Launched"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:background="#f0f0f0"
+                android:padding="12dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
+    <!-- Content Container -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- Token Launched Leaderboard -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/tokenLaunchedRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:visibility="visible" />
+
+        <!-- SL Staked Leaderboard -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/slStakedRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:visibility="gone" />
+
+        <!-- Most Likes Leaderboard -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/mostLikesRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:visibility="gone" />
+
+        <!-- Most Launched Leaderboard -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/mostLaunchedRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+</LinearLayout>
