@@ -45,53 +45,62 @@
                 android:id="@+id/tabTokenLaunched"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Token Launched"
-                android:textSize="14sp"
+                android:text="🚀 Tokens"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="#9945FF"
-                android:background="#9945FF20"
-                android:padding="12dp"
-                android:layout_marginEnd="8dp"
+                android:background="@drawable/tab_background_selected"
+                android:padding="10dp"
+                android:layout_marginEnd="6dp"
                 android:clickable="true"
-                android:focusable="true" />
+                android:focusable="true"
+                android:minWidth="70dp"
+                android:gravity="center" />
 
             <TextView
                 android:id="@+id/tabSLStaked"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="SL Staked"
-                android:textSize="14sp"
+                android:text="💎 Staked"
+                android:textSize="12sp"
                 android:textColor="#666666"
-                android:background="#f0f0f0"
-                android:padding="12dp"
-                android:layout_marginEnd="8dp"
+                android:background="@drawable/tab_background_unselected"
+                android:padding="10dp"
+                android:layout_marginEnd="6dp"
                 android:clickable="true"
-                android:focusable="true" />
+                android:focusable="true"
+                android:minWidth="70dp"
+                android:gravity="center" />
 
             <TextView
                 android:id="@+id/tabMostLikes"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Most Likes"
-                android:textSize="14sp"
+                android:text="❤️ Likes"
+                android:textSize="12sp"
                 android:textColor="#666666"
-                android:background="#f0f0f0"
-                android:padding="12dp"
-                android:layout_marginEnd="8dp"
+                android:background="@drawable/tab_background_unselected"
+                android:padding="10dp"
+                android:layout_marginEnd="6dp"
                 android:clickable="true"
-                android:focusable="true" />
+                android:focusable="true"
+                android:minWidth="70dp"
+                android:gravity="center" />
 
             <TextView
                 android:id="@+id/tabMostLaunched"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Most Launched"
-                android:textSize="14sp"
+                android:text="🔥 Active"
+                android:textSize="12sp"
                 android:textColor="#666666"
-                android:background="#f0f0f0"
-                android:padding="12dp"
+                android:background="@drawable/tab_background_unselected"
+                android:padding="10dp"
+                android:layout_marginEnd="6dp"
                 android:clickable="true"
-                android:focusable="true" />
+                android:focusable="true"
+                android:minWidth="70dp"
+                android:gravity="center" />
 
         </LinearLayout>
 

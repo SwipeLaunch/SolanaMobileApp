@@ -7,7 +7,7 @@
     <item
         android:id="@+id/nav_superstar"
         android:icon="@android:drawable/btn_star_big_on"
-        android:title="Superstar" />
+        android:title="Presale" />
     <item
         android:id="@+id/nav_rankings"
         android:icon="@android:drawable/ic_menu_sort_by_size"

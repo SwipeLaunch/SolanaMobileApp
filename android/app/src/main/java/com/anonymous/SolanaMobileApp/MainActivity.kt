@@ -557,7 +557,7 @@ class MainActivity : AppCompatActivity() {
         // Reset all tab styles
         listOf(tabTokenLaunched, tabSLStaked, tabMostLikes, tabMostLaunched).forEach { tab ->
             tab.setTextColor(0xFF666666.toInt())
-            tab.setBackgroundColor(0xFFF0F0F0.toInt())
+            tab.setBackgroundResource(R.drawable.tab_background_unselected)
         }
         
         // Hide all RecyclerViews
@@ -570,22 +570,22 @@ class MainActivity : AppCompatActivity() {
         when (tabType) {
             "token_launched" -> {
                 tabTokenLaunched.setTextColor(0xFF9945FF.toInt())
-                tabTokenLaunched.setBackgroundColor(0xFF9945FF20.toInt())
+                tabTokenLaunched.setBackgroundResource(R.drawable.tab_background_selected)
                 tokenLaunchedRecyclerView.visibility = View.VISIBLE
             }
             "sl_staked" -> {
                 tabSLStaked.setTextColor(0xFF9945FF.toInt())
-                tabSLStaked.setBackgroundColor(0xFF9945FF20.toInt())
+                tabSLStaked.setBackgroundResource(R.drawable.tab_background_selected)
                 slStakedRecyclerView.visibility = View.VISIBLE
             }
             "most_likes" -> {
                 tabMostLikes.setTextColor(0xFF9945FF.toInt())
-                tabMostLikes.setBackgroundColor(0xFF9945FF20.toInt())
+                tabMostLikes.setBackgroundResource(R.drawable.tab_background_selected)
                 mostLikesRecyclerView.visibility = View.VISIBLE
             }
             "most_launched" -> {
                 tabMostLaunched.setTextColor(0xFF9945FF.toInt())
-                tabMostLaunched.setBackgroundColor(0xFF9945FF20.toInt())
+                tabMostLaunched.setBackgroundResource(R.drawable.tab_background_selected)
                 mostLaunchedRecyclerView.visibility = View.VISIBLE
             }
         }
