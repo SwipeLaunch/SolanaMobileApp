@@ -1,18 +1,41 @@
 package com.anonymous.SolanaMobileApp
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.os.Bundle
 import android.view.View
+import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     
     private lateinit var bottomNavigation: BottomNavigationView
     private lateinit var swipeContainer: FrameLayout
+    private lateinit var walletManager: WalletManager
     private val tokenCards = mutableListOf<SwipeableTokenCard>()
     private var currentCardIndex = 0
+    
+    // Profile page views
+    private lateinit var profilePage: View
+    private lateinit var discoverContent: View
+    private lateinit var profileWalletButton: Button
+    private lateinit var walletStatusText: TextView
+    private lateinit var profileDetailsCard: CardView
+    private lateinit var activityCard: CardView
+    private lateinit var profileWalletAddress: TextView
+    private lateinit var profileSolBalance: TextView
+    private lateinit var requestAirdropButton: Button
+    private lateinit var copyAddressButton: Button
+    private lateinit var tokensLikedCount: TextView
+    private lateinit var tokensPassedCount: TextView
+    private lateinit var totalSwipesCount: TextView
     
     // Sample token data
     private val tokens = listOf(
@@ -33,6 +56,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         
         initViews()
+        setupWalletManager()
         setupBottomNavigation()
         setupSwipeCards()
     }
@@ -40,6 +64,80 @@ class MainActivity : AppCompatActivity() {
     private fun initViews() {
         bottomNavigation = findViewById(R.id.bottomNavigation)
         swipeContainer = findViewById(R.id.swipeContainer)
+        
+        // Initialize page views
+        discoverContent = findViewById(R.id.discoverContent)
+        profilePage = findViewById(R.id.profilePage)
+        
+        // Initialize profile page views
+        profileWalletButton = profilePage.findViewById(R.id.profileWalletButton)
+        walletStatusText = profilePage.findViewById(R.id.walletStatusText)
+        profileDetailsCard = profilePage.findViewById(R.id.profileDetailsCard)
+        activityCard = profilePage.findViewById(R.id.activityCard)
+        profileWalletAddress = profilePage.findViewById(R.id.profileWalletAddress)
+        profileSolBalance = profilePage.findViewById(R.id.profileSolBalance)
+        requestAirdropButton = profilePage.findViewById(R.id.requestAirdropButton)
+        copyAddressButton = profilePage.findViewById(R.id.copyAddressButton)
+        tokensLikedCount = profilePage.findViewById(R.id.tokensLikedCount)
+        tokensPassedCount = profilePage.findViewById(R.id.tokensPassedCount)
+        totalSwipesCount = profilePage.findViewById(R.id.totalSwipesCount)
+    }
+    
+    private fun setupWalletManager() {
+        walletManager = WalletManager(this)
+        
+        walletManager.setCallback(object : WalletManager.WalletCallback {
+            override fun onWalletConnected(publicKey: String) {
+                val displayKey = walletManager.formatPublicKeyForDisplay(publicKey)
+                updateProfileUI(true, publicKey, displayKey)
+                showToast("Wallet connected: $displayKey")
+            }
+            
+            override fun onWalletDisconnected() {
+                updateProfileUI(false, null, null)
+                showToast("Wallet disconnected")
+            }
+            
+            override fun onWalletError(error: String) {
+                showToast("Wallet error: $error")
+            }
+            
+            override fun onTransactionComplete(signature: String) {
+                showToast("Transaction complete: ${signature.take(8)}...")
+                // Update SOL balance after transaction (simulate)
+                profileSolBalance.text = "1.00 SOL"
+            }
+        })
+        
+        profileWalletButton.setOnClickListener {
+            if (walletManager.isWalletConnected()) {
+                // Disconnect wallet
+                lifecycleScope.launch {
+                    walletManager.disconnectWallet()
+                }
+            } else {
+                // Connect wallet
+                lifecycleScope.launch {
+                    walletManager.connectWallet()
+                }
+            }
+        }
+        
+        // Setup profile action buttons
+        requestAirdropButton.setOnClickListener {
+            lifecycleScope.launch {
+                walletManager.requestAirdrop()
+            }
+        }
+        
+        copyAddressButton.setOnClickListener {
+            walletManager.getConnectedPublicKey()?.let { address ->
+                val clipboard = getSystemService(ClipboardManager::class.java)
+                val clip = ClipData.newPlainText("Wallet Address", address)
+                clipboard.setPrimaryClip(clip)
+                showToast("Address copied to clipboard")
+            }
+        }
     }
     
     private fun setupBottomNavigation() {
@@ -62,7 +160,7 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_profile -> {
-                    showToast("Profile Tab")
+                    showProfileTab()
                     true
                 }
                 else -> false
@@ -166,8 +264,38 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun showDiscoverTab() {
-        findViewById<View>(R.id.discoverContent).visibility = View.VISIBLE
-        // Hide other tab content when implemented
+        discoverContent.visibility = View.VISIBLE
+        profilePage.visibility = View.GONE
+    }
+    
+    private fun showProfileTab() {
+        discoverContent.visibility = View.GONE
+        profilePage.visibility = View.VISIBLE
+    }
+    
+    private fun updateProfileUI(connected: Boolean, fullAddress: String?, displayAddress: String?) {
+        if (connected && fullAddress != null && displayAddress != null) {
+            // Wallet connected - show profile details
+            profileWalletButton.text = "Disconnect Wallet"
+            walletStatusText.text = "Wallet connected successfully"
+            profileDetailsCard.visibility = View.VISIBLE
+            activityCard.visibility = View.VISIBLE
+            
+            // Update profile info
+            profileWalletAddress.text = displayAddress
+            profileSolBalance.text = "0.00 SOL"
+            
+            // Mock activity stats (in real app, track these)
+            tokensLikedCount.text = "0"
+            tokensPassedCount.text = "0" 
+            totalSwipesCount.text = "0"
+        } else {
+            // Wallet disconnected - hide profile details
+            profileWalletButton.text = "Connect Solana Wallet"
+            walletStatusText.text = "Connect your wallet to see your profile details"
+            profileDetailsCard.visibility = View.GONE
+            activityCard.visibility = View.GONE
+        }
     }
     
     private fun showToast(message: String) {

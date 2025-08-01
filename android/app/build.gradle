@@ -50,4 +50,14 @@ dependencies {
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
     implementation 'com.google.android.material:material:1.11.0'
+    
+    // For now, we'll create a mock implementation
+    // TODO: Add proper MWA when dependencies are resolved
+    
+    // HTTP client for Solana RPC calls
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    
+    // Coroutines for async operations
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
 }

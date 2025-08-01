@@ -19,5 +19,9 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        // Solana Mobile Stack repository
+        maven { url 'https://maven.pkg.github.com/solana-mobile/mobile-wallet-adapter' }
+        // Alternative: use JitPack for Solana dependencies
+        maven { url 'https://jitpack.io' }
     }
 }
