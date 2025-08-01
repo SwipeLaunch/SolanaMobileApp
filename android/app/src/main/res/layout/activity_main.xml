@@ -37,6 +37,14 @@
             android:layout_height="match_parent"
             android:visibility="gone" />
 
+        <!-- Presale content -->
+        <include
+            android:id="@+id/presalePage"
+            layout="@layout/presale_page"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
     </FrameLayout>
 
     <!-- Bottom Navigation -->

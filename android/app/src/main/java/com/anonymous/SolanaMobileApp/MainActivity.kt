@@ -8,9 +8,12 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.launch
 
@@ -25,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     // Profile page views
     private lateinit var profilePage: View
     private lateinit var discoverContent: View
+    private lateinit var presalePage: View
     private lateinit var profileWalletButton: Button
     private lateinit var walletStatusText: TextView
     private lateinit var profileDetailsCard: CardView
@@ -36,6 +40,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tokensLikedCount: TextView
     private lateinit var tokensPassedCount: TextView
     private lateinit var totalSwipesCount: TextView
+    
+    // Presale page views
+    private lateinit var presaleRecyclerView: RecyclerView
+    private lateinit var walletBalanceText: TextView
+    private lateinit var presaleAdapter: PresaleAdapter
     
     // Sample token data
     private val tokens = listOf(
@@ -49,6 +58,25 @@ class MainActivity : AppCompatActivity() {
                  "JKL012...OPQ678", "speeddemon", "sl_lambo", 5000, 34210, 15, "https://telegram.org/lambo"),
         TokenData("5", "DIAMOND", "gemHunter", "💎 Unbreakable hands, unbreakable token. DIAMOND is forever on Solana blockchain.", 567,
                  "MNO345...TUV901", "gemhunter", "sl_diamond", 1200, 5670, 3, "https://discord.gg/diamond")
+    )
+    
+    // Sample presale data
+    private val presaleTokens = listOf(
+        PresaleTokenData("ps1", "ROCKET Token", "ROCKET", "🚀 Next-gen DeFi protocol with advanced yield farming capabilities", 
+                        1_000_000_000L, 75.2, System.currentTimeMillis(), System.currentTimeMillis() + (2 * 24 * 60 * 60 * 1000L), 
+                        "Creator1", "TokenAddr1"),
+        PresaleTokenData("ps2", "MOON Coin", "MOON", "🌙 Community-driven memecoin with deflationary tokenomics", 
+                        500_000_000L, 42.8, System.currentTimeMillis(), System.currentTimeMillis() + (5 * 24 * 60 * 60 * 1000L), 
+                        "Creator2", "TokenAddr2"),
+        PresaleTokenData("ps3", "DIAMOND", "DMD", "💎 Premium store of value token with limited supply and staking rewards", 
+                        100_000_000L, 89.1, System.currentTimeMillis(), System.currentTimeMillis() + (1 * 24 * 60 * 60 * 1000L), 
+                        "Creator3", "TokenAddr3"),
+        PresaleTokenData("ps4", "SOLAR Power", "SOLAR", "☀️ Green energy token supporting sustainable blockchain mining", 
+                        2_000_000_000L, 23.5, System.currentTimeMillis(), System.currentTimeMillis() + (7 * 24 * 60 * 60 * 1000L), 
+                        "Creator4", "TokenAddr4"),
+        PresaleTokenData("ps5", "GALAXY Token", "GLXY", "🌌 Cross-chain gaming token for the metaverse ecosystem", 
+                        750_000_000L, 67.3, System.currentTimeMillis(), System.currentTimeMillis() + (3 * 24 * 60 * 60 * 1000L), 
+                        "Creator5", "TokenAddr5")
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,6 +96,7 @@ class MainActivity : AppCompatActivity() {
         // Initialize page views
         discoverContent = findViewById(R.id.discoverContent)
         profilePage = findViewById(R.id.profilePage)
+        presalePage = findViewById(R.id.presalePage)
         
         // Initialize profile page views
         profileWalletButton = profilePage.findViewById(R.id.profileWalletButton)
@@ -81,6 +110,17 @@ class MainActivity : AppCompatActivity() {
         tokensLikedCount = profilePage.findViewById(R.id.tokensLikedCount)
         tokensPassedCount = profilePage.findViewById(R.id.tokensPassedCount)
         totalSwipesCount = profilePage.findViewById(R.id.totalSwipesCount)
+        
+        // Initialize presale page views
+        presaleRecyclerView = presalePage.findViewById(R.id.presaleRecyclerView)
+        walletBalanceText = presalePage.findViewById(R.id.walletBalanceText)
+        
+        // Setup presale RecyclerView
+        presaleAdapter = PresaleAdapter(presaleTokens) { token -> 
+            showBuyDialog(token)
+        }
+        presaleRecyclerView.layoutManager = LinearLayoutManager(this)
+        presaleRecyclerView.adapter = presaleAdapter
     }
     
     private fun setupWalletManager() {
@@ -148,7 +188,7 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_superstar -> {
-                    showToast("Superstar Tab")
+                    showPresaleTab()
                     true
                 }
                 R.id.nav_rankings -> {
@@ -266,11 +306,20 @@ class MainActivity : AppCompatActivity() {
     private fun showDiscoverTab() {
         discoverContent.visibility = View.VISIBLE
         profilePage.visibility = View.GONE
+        presalePage.visibility = View.GONE
     }
     
     private fun showProfileTab() {
         discoverContent.visibility = View.GONE
         profilePage.visibility = View.VISIBLE
+        presalePage.visibility = View.GONE
+    }
+    
+    private fun showPresaleTab() {
+        discoverContent.visibility = View.GONE
+        profilePage.visibility = View.GONE
+        presalePage.visibility = View.VISIBLE
+        updateWalletBalance()
     }
     
     private fun updateProfileUI(connected: Boolean, fullAddress: String?, displayAddress: String?) {
@@ -295,6 +344,61 @@ class MainActivity : AppCompatActivity() {
             walletStatusText.text = "Connect your wallet to see your profile details"
             profileDetailsCard.visibility = View.GONE
             activityCard.visibility = View.GONE
+        }
+    }
+    
+    private fun updateWalletBalance() {
+        // Mock wallet balance - in real app, get from wallet
+        val balance = if (walletManager.isWalletConnected()) "1.25 SOL" else "0.00 SOL"
+        walletBalanceText.text = balance
+    }
+    
+    private fun showBuyDialog(token: PresaleTokenData) {
+        if (!walletManager.isWalletConnected()) {
+            showToast("Please connect your wallet first in the Profile tab")
+            return
+        }
+        
+        val tokensPerSol = token.getTokensPerSol()
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Buy ${token.symbol}")
+            .setMessage("Purchase ${token.name} tokens\n\n" +
+                       "Rate: 1 SOL = ${String.format("%.0f", tokensPerSol)} ${token.symbol}\n" +
+                       "Target: 100 SOL (${token.getProgressPercentage()}% complete)\n\n" +
+                       "How much SOL do you want to spend?")
+            .setView(createBuyDialogView(token))
+            .setPositiveButton("Confirm Purchase") { _, _ ->
+                // In real implementation, this would create and sign a transaction
+                processPurchase(token, 1.0) // Mock 1 SOL purchase
+            }
+            .setNegativeButton("Cancel", null)
+            .create()
+        
+        dialog.show()
+    }
+    
+    private fun createBuyDialogView(token: PresaleTokenData): View {
+        val view = layoutInflater.inflate(android.R.layout.simple_list_item_1, null)
+        // For simplicity, using basic view - in real app, create custom dialog layout
+        return view
+    }
+    
+    private fun processPurchase(token: PresaleTokenData, solAmount: Double) {
+        if (!walletManager.isWalletConnected()) {
+            showToast("Wallet not connected")
+            return
+        }
+        
+        lifecycleScope.launch {
+            showToast("Processing transaction...")
+            
+            // Simulate transaction processing
+            kotlinx.coroutines.delay(2000)
+            
+            val tokensReceived = token.getTokensPerSol() * solAmount
+            showToast("✅ Purchase successful!\nReceived ${String.format("%.0f", tokensReceived)} ${token.symbol}")
+            
+            // In real app, update token progress and user's balance
         }
     }
     
