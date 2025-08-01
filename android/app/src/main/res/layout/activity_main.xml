@@ -53,6 +53,14 @@
             android:layout_height="match_parent"
             android:visibility="gone" />
 
+        <!-- Activity content -->
+        <include
+            android:id="@+id/activityPage"
+            layout="@layout/activity_page"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
     </FrameLayout>
 
     <!-- Bottom Navigation -->

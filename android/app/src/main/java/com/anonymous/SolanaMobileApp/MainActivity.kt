@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -56,6 +57,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var slStakedRecyclerView: RecyclerView
     private lateinit var mostLikesRecyclerView: RecyclerView
     private lateinit var mostLaunchedRecyclerView: RecyclerView
+    
+    // Activity page views
+    private lateinit var activityPage: View
+    private lateinit var activityFeedRecyclerView: RecyclerView
+    private lateinit var emptyStateLayout: LinearLayout
+    private lateinit var exploreCreatorsButton: Button
+    private lateinit var activityLikesCount: TextView
+    private lateinit var activityPresalesCount: TextView
+    private lateinit var activityFollowingCount: TextView
+    private lateinit var activityFeedAdapter: ActivityFeedAdapter
     
     // Sample token data
     private val tokens = listOf(
@@ -122,6 +133,24 @@ class MainActivity : AppCompatActivity() {
         CreatorMostLaunchedData(4, "serial_launcher", "serial_launcher", 12, 2_100_000.0, 0.58, "WINNER Token", 450_000.0),
         CreatorMostLaunchedData(5, "defi_builder", "defi_builder", 10, 1_800_000.0, 0.70, "YIELD Token", 350_000.0)
     )
+    
+    // Sample activity feed data
+    private val activityFeedData = listOf(
+        ActivityFeedData("1", "ck1", "cryptoking", "CK", ActivityType.LIKE, "liked MOON Token by spaceexplorer", 
+            System.currentTimeMillis() - 120000, TokenActivityInfo("MOON Token", "spaceexplorer", "0.05 SOL")),
+        ActivityFeedData("2", "ml1", "memelord", "ML", ActivityType.PRESALE, "joined DOGE 2.0 presale", 
+            System.currentTimeMillis() - 300000, TokenActivityInfo("DOGE 2.0", "memelord", "0.03 SOL")),
+        ActivityFeedData("3", "se1", "spaceexplorer", "SE", ActivityType.LAUNCH, "launched ROCKET Coin", 
+            System.currentTimeMillis() - 600000, TokenActivityInfo("ROCKET Coin", "spaceexplorer", "0.08 SOL")),
+        ActivityFeedData("4", "cw1", "catwhisperer", "CW", ActivityType.LIKE, "liked DIAMOND by gemhunter", 
+            System.currentTimeMillis() - 900000, TokenActivityInfo("DIAMOND", "gemhunter", "0.12 SOL")),
+        ActivityFeedData("5", "sd1", "speedDemon", "SD", ActivityType.PRESALE, "joined SOLAR Power presale", 
+            System.currentTimeMillis() - 1200000, TokenActivityInfo("SOLAR Power", "greenenergy", "0.04 SOL")),
+        ActivityFeedData("6", "gh1", "gemhunter", "GH", ActivityType.FOLLOW, "started following prolific_dev", 
+            System.currentTimeMillis() - 1800000, null),
+        ActivityFeedData("7", "ml2", "memelord", "ML", ActivityType.LIKE, "liked GALAXY Token by metaverse", 
+            System.currentTimeMillis() - 2400000, TokenActivityInfo("GALAXY Token", "metaverse", "0.06 SOL"))
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -177,8 +206,18 @@ class MainActivity : AppCompatActivity() {
         mostLikesRecyclerView = leaderboardPage.findViewById(R.id.mostLikesRecyclerView)
         mostLaunchedRecyclerView = leaderboardPage.findViewById(R.id.mostLaunchedRecyclerView)
         
+        // Initialize activity page views
+        activityPage = findViewById(R.id.activityPage)
+        activityFeedRecyclerView = activityPage.findViewById(R.id.activityFeedRecyclerView)
+        emptyStateLayout = activityPage.findViewById<LinearLayout>(R.id.emptyStateLayout)
+        exploreCreatorsButton = activityPage.findViewById(R.id.exploreCreatorsButton)
+        activityLikesCount = activityPage.findViewById(R.id.activityLikesCount)
+        activityPresalesCount = activityPage.findViewById(R.id.activityPresalesCount)
+        activityFollowingCount = activityPage.findViewById(R.id.activityFollowingCount)
+        
         setupLeaderboardTabs()
         setupLeaderboardRecyclerViews()
+        setupActivityPage()
     }
     
     private fun setupWalletManager() {
@@ -254,7 +293,7 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_activities -> {
-                    showToast("Activities Tab")
+                    showActivityTab()
                     true
                 }
                 R.id.nav_profile -> {
@@ -366,6 +405,7 @@ class MainActivity : AppCompatActivity() {
         profilePage.visibility = View.GONE
         presalePage.visibility = View.GONE
         leaderboardPage.visibility = View.GONE
+        activityPage.visibility = View.GONE
     }
     
     private fun showProfileTab() {
@@ -373,6 +413,7 @@ class MainActivity : AppCompatActivity() {
         profilePage.visibility = View.VISIBLE
         presalePage.visibility = View.GONE
         leaderboardPage.visibility = View.GONE
+        activityPage.visibility = View.GONE
     }
     
     private fun showPresaleTab() {
@@ -380,7 +421,16 @@ class MainActivity : AppCompatActivity() {
         profilePage.visibility = View.GONE
         presalePage.visibility = View.VISIBLE
         leaderboardPage.visibility = View.GONE
+        activityPage.visibility = View.GONE
         updateWalletBalance()
+    }
+    
+    private fun showActivityTab() {
+        discoverContent.visibility = View.GONE
+        profilePage.visibility = View.GONE
+        presalePage.visibility = View.GONE
+        leaderboardPage.visibility = View.GONE
+        activityPage.visibility = View.VISIBLE
     }
     
     private fun updateProfileUI(connected: Boolean, fullAddress: String?, displayAddress: String?) {
@@ -468,6 +518,7 @@ class MainActivity : AppCompatActivity() {
         profilePage.visibility = View.GONE
         presalePage.visibility = View.GONE
         leaderboardPage.visibility = View.VISIBLE
+        activityPage.visibility = View.GONE
     }
     
     private fun setupLeaderboardTabs() {
@@ -537,6 +588,150 @@ class MainActivity : AppCompatActivity() {
                 tabMostLaunched.setBackgroundColor(0xFF9945FF20.toInt())
                 mostLaunchedRecyclerView.visibility = View.VISIBLE
             }
+        }
+    }
+    
+    private fun setupActivityPage() {
+        // Setup activity feed adapter
+        activityFeedAdapter = ActivityFeedAdapter(
+            activityFeedData,
+            onViewTokenClick = { activity ->
+                showTokenDetailPopup(activity)
+            },
+            onLikeClick = { activity ->
+                showToast("❤️ Liked ${activity.tokenInfo?.tokenName ?: "activity"}")
+            }
+        )
+        
+        activityFeedRecyclerView.layoutManager = LinearLayoutManager(this)
+        activityFeedRecyclerView.adapter = activityFeedAdapter
+        
+        // Setup explore creators button
+        exploreCreatorsButton.setOnClickListener {
+            showToast("Navigate to creator discovery (placeholder)")
+            // In real app, this would navigate to discover tab or creator list
+            bottomNavigation.selectedItemId = R.id.nav_discover
+        }
+        
+        // Update activity stats (mock data for demo)
+        updateActivityStats()
+        
+        // Show/hide empty state based on data
+        if (activityFeedData.isNotEmpty()) {
+            emptyStateLayout.visibility = View.GONE
+            activityFeedRecyclerView.visibility = View.VISIBLE
+        } else {
+            emptyStateLayout.visibility = View.VISIBLE
+            activityFeedRecyclerView.visibility = View.GONE
+        }
+    }
+    
+    private fun updateActivityStats() {
+        // Count likes and presales from activity data (mock implementation)
+        val likesCount = activityFeedData.count { it.activityType == ActivityType.LIKE }
+        val presalesCount = activityFeedData.count { it.activityType == ActivityType.PRESALE }
+        val followingCount = 8 // Mock following count
+        
+        activityLikesCount.text = likesCount.toString()
+        activityPresalesCount.text = presalesCount.toString()
+        activityFollowingCount.text = followingCount.toString()
+    }
+    
+    private fun showTokenDetailPopup(activity: ActivityFeedData) {
+        if (activity.tokenInfo == null) {
+            showToast("No token information available")
+            return
+        }
+        
+        val dialogView = layoutInflater.inflate(R.layout.token_detail_popup, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        
+        // Find views in the popup
+        val closeButton = dialogView.findViewById<Button>(R.id.closeButton)
+        val tokenName = dialogView.findViewById<TextView>(R.id.tokenName)
+        val tokenSymbol = dialogView.findViewById<TextView>(R.id.tokenSymbol)
+        val tokenPrice = dialogView.findViewById<TextView>(R.id.tokenPrice)
+        val tokenDescription = dialogView.findViewById<TextView>(R.id.tokenDescription)
+        val tokenLikes = dialogView.findViewById<TextView>(R.id.tokenLikes)
+        val tokenMarketCap = dialogView.findViewById<TextView>(R.id.tokenMarketCap)
+        val tokenRank = dialogView.findViewById<TextView>(R.id.tokenRank)
+        val creatorName = dialogView.findViewById<TextView>(R.id.creatorName)
+        val creatorAvatar = dialogView.findViewById<TextView>(R.id.creatorAvatar)
+        val followCreatorButton = dialogView.findViewById<Button>(R.id.followCreatorButton)
+        val likeTokenButton = dialogView.findViewById<Button>(R.id.likeTokenButton)
+        val buyTokenButton = dialogView.findViewById<Button>(R.id.buyTokenButton)
+        
+        // Find matching token data from our sample data
+        val tokenData = tokens.find { it.name == activity.tokenInfo.tokenName }
+        
+        // Populate the popup with data
+        tokenName.text = activity.tokenInfo.tokenName
+        tokenSymbol.text = extractSymbolFromName(activity.tokenInfo.tokenName)
+        tokenPrice.text = activity.tokenInfo.tokenPrice
+        creatorName.text = activity.tokenInfo.tokenCreator
+        creatorAvatar.text = activity.tokenInfo.tokenCreator.take(2).uppercase()
+        
+        if (tokenData != null) {
+            tokenDescription.text = tokenData.description
+            tokenLikes.text = formatNumber(tokenData.likes)
+            // Calculate mock market cap based on SL tokens staked
+            val mockMarketCap = tokenData.slTokenStaked * 50 // Mock calculation
+            tokenMarketCap.text = formatNumber(mockMarketCap)
+            tokenRank.text = "#${tokenData.tokensLaunched + 3}" // Mock ranking based on tokens launched
+        } else {
+            // Use mock data for tokens not in our sample
+            tokenDescription.text = "Revolutionary token on Solana blockchain with innovative features and strong community support."
+            tokenLikes.text = "856"
+            tokenMarketCap.text = "1.2M"
+            tokenRank.text = "#12"
+        }
+        
+        // Set click listeners
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        followCreatorButton.setOnClickListener {
+            showToast("Following ${activity.tokenInfo.tokenCreator}")
+            followCreatorButton.text = "Following"
+            followCreatorButton.isEnabled = false
+        }
+        
+        likeTokenButton.setOnClickListener {
+            showToast("❤️ Liked ${activity.tokenInfo.tokenName}")
+            likeTokenButton.text = "❤️ Liked"
+            likeTokenButton.isEnabled = false
+        }
+        
+        buyTokenButton.setOnClickListener {
+            showToast("Buy functionality coming soon!")
+            dialog.dismiss()
+        }
+        
+        dialog.show()
+    }
+    
+    private fun extractSymbolFromName(tokenName: String): String {
+        return when {
+            tokenName.contains("MOON") -> "MOON"
+            tokenName.contains("DOGE") -> "DOGE"
+            tokenName.contains("CAT") -> "CAT"
+            tokenName.contains("LAMBO") -> "LAMBO"
+            tokenName.contains("DIAMOND") -> "DMD"
+            tokenName.contains("ROCKET") -> "ROCKET"
+            tokenName.contains("SOLAR") -> "SOLAR"
+            tokenName.contains("GALAXY") -> "GLXY"
+            else -> tokenName.take(3).uppercase()
+        }
+    }
+    
+    private fun formatNumber(number: Int): String {
+        return when {
+            number >= 1000000 -> String.format("%.1fM", number / 1000000.0)
+            number >= 1000 -> String.format("%.1fK", number / 1000.0)
+            else -> number.toString()
         }
     }
     

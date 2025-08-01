@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header with user info and timestamp -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingBottom="12dp">
+
+            <!-- Avatar placeholder -->
+            <TextView
+                android:id="@+id/userAvatar"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="#9945FF"
+                android:gravity="center"
+                android:text="CK"
+                android:textColor="#ffffff"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/userName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="cryptoking"
+                    android:textColor="#1a1a1a"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/activityTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2 min ago"
+                    android:textColor="#666"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <!-- Activity type indicator -->
+            <TextView
+                android:id="@+id/activityTypeIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:background="#FF6B35"
+                android:gravity="center"
+                android:text="❤️"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+
+        <!-- Activity content -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/activityDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="liked MOON Token by spaceexplorer"
+                android:textColor="#333"
+                android:textSize="14sp" />
+
+            <!-- Token info card (for token-related activities) -->
+            <LinearLayout
+                android:id="@+id/tokenInfoCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#f8f9fa"
+                android:orientation="horizontal"
+                android:padding="12dp"
+                android:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tokenName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="MOON Token"
+                        android:textColor="#1a1a1a"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tokenCreator"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="by spaceexplorer"
+                        android:textColor="#666"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tokenPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0.05 SOL"
+                    android:textColor="#9945FF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Interaction buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="end"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/viewTokenButton"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:paddingHorizontal="16dp"
+                android:text="View"
+                android:textColor="#9945FF"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/likeButton"
+                style="?android:attr/borderlessButtonStyle" 
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:text="❤️"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
