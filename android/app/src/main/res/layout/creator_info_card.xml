@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="#ffffff">
+
+    <!-- Creator Profile Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical">
+
+        <!-- Profile Image Placeholder -->
+        <View
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="#9945FF"
+            android:layout_marginEnd="12dp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/creatorName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@creator"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#333333" />
+
+            <TextView
+                android:id="@+id/solanaHandle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="sl_token"
+                android:textSize="14sp"
+                android:textColor="#9945FF" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Stats Grid -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/slTokenStaked"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1,250"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#333333" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SL Staked"
+                android:textSize="12sp"
+                android:textColor="#666666" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/totalLikes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="5,420"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#333333" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Total Likes"
+                android:textSize="12sp"
+                android:textColor="#666666" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/tokensLaunched"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="12"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#333333" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tokens"
+                android:textSize="12sp"
+                android:textColor="#666666" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#f0f0f0"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Contact Info -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📧 Contact"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/walletAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔑 ABC...XYZ"
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/twitterHandle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🐦 @twitter_handle"
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Community Link -->
+    <Button
+        android:id="@+id/communityButton"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="💬 Join Community Chat"
+        android:textSize="16sp"
+        android:backgroundTint="#9945FF"
+        android:textColor="#ffffff"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Back Button -->
+    <Button
+        android:id="@+id/backButton"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="← Back to Token"
+        android:textSize="16sp"
+        android:backgroundTint="#f0f0f0"
+        android:textColor="#333333" />
+
+</LinearLayout>

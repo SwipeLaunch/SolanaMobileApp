@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Info button in top right -->
+    <Button
+        android:id="@+id/infoButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="8dp"
+        android:text="ℹ️"
+        android:textSize="16sp"
+        android:background="@drawable/info_button_background"
+        android:elevation="8dp" />
+
+    <!-- Main content -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+    <!-- Image placeholder -->
+    <View
+        android:id="@+id/imagePlaceholder"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:background="#f0f0f0"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Token info -->
+    <TextView
+        android:id="@+id/tokenName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Token Name"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/creator"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="by @creator"
+        android:textSize="14sp"
+        android:textColor="#9945FF"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/description"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="Token description goes here"
+        android:textSize="16sp"
+        android:textColor="#666666"
+        android:lineSpacingMultiplier="1.5"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Footer with likes -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#f0f0f0"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/likes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="❤️ 0"
+        android:textSize="16sp"
+        android:textColor="#666666"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Action buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/dislikeButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="👎 Pass"
+            android:textSize="16sp"
+            android:backgroundTint="#ff4444"
+            android:textColor="#ffffff"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/likeButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="❤️ Like"
+            android:textSize="16sp"
+            android:backgroundTint="#9945FF"
+            android:textColor="#ffffff"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>
