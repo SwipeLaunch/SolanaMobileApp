@@ -1,22 +1,30 @@
 package com.anonymous.SolanaMobileApp
 
+import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.View
-import android.widget.Button
-import android.widget.FrameLayout
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
+import java.io.File
 
 class MainActivity : AppCompatActivity() {
     
@@ -41,6 +49,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tokensLikedCount: TextView
     private lateinit var tokensPassedCount: TextView
     private lateinit var totalSwipesCount: TextView
+    private lateinit var myTokensCard: CardView
+    private lateinit var myTokensRecyclerView: RecyclerView
+    private lateinit var myTokensEmptyState: LinearLayout
     
     // Presale page views
     private lateinit var presaleRecyclerView: RecyclerView
@@ -63,10 +74,63 @@ class MainActivity : AppCompatActivity() {
     private lateinit var activityFeedRecyclerView: RecyclerView
     private lateinit var emptyStateLayout: LinearLayout
     private lateinit var exploreCreatorsButton: Button
+    private lateinit var leaderboardButton: Button
     private lateinit var activityLikesCount: TextView
     private lateinit var activityPresalesCount: TextView
     private lateinit var activityFollowingCount: TextView
     private lateinit var activityFeedAdapter: ActivityFeedAdapter
+    
+    // Create Token page views
+    private lateinit var createTokenPage: View
+    private lateinit var pageTitle: TextView
+    private lateinit var selectedImage: ImageView
+    private lateinit var imagePlaceholder: LinearLayout
+    private lateinit var removeImageButton: Button
+    private lateinit var takePhotoButton: Button
+    private lateinit var selectImageButton: Button
+    private lateinit var tokenNameInput: TextInputEditText
+    private lateinit var tokenSymbolInput: TextInputEditText
+    private lateinit var tokenDescriptionInput: TextInputEditText
+    private lateinit var tokenSupplySpinner: Spinner
+    private lateinit var tokenChatLinkInput: TextInputEditText
+    private lateinit var launchTypeGroup: RadioGroup
+    private lateinit var instantLaunchCard: CardView
+    private lateinit var proposeTokenCard: CardView
+    private lateinit var presaleOptionsLayout: LinearLayout
+    private lateinit var createTokenButton: Button
+    private lateinit var costInfoTitle: TextView
+    private lateinit var costInfoDescription: TextView
+    private lateinit var costInfoLayout: LinearLayout
+    
+    // Image handling
+    private var currentImageUri: Uri? = null
+    private var tempImageUri: Uri? = null
+    
+    // Created tokens storage (in real app, this would be from database/blockchain)
+    private val createdTokens = mutableListOf<CreatedTokenInfo>()
+    
+    // Activity result launchers
+    private val takePictureLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success && tempImageUri != null) {
+            currentImageUri = tempImageUri
+            displaySelectedImage(currentImageUri!!)
+        }
+    }
+    
+    private val selectImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            currentImageUri = it
+            displaySelectedImage(it)
+        }
+    }
+    
+    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            showToast("Permission granted")
+        } else {
+            showToast("Permission required for camera access")
+        }
+    }
     
     // Sample token data
     private val tokens = listOf(
@@ -183,6 +247,9 @@ class MainActivity : AppCompatActivity() {
         tokensLikedCount = profilePage.findViewById(R.id.tokensLikedCount)
         tokensPassedCount = profilePage.findViewById(R.id.tokensPassedCount)
         totalSwipesCount = profilePage.findViewById(R.id.totalSwipesCount)
+        myTokensCard = profilePage.findViewById(R.id.myTokensCard)
+        myTokensRecyclerView = profilePage.findViewById(R.id.myTokensRecyclerView)
+        myTokensEmptyState = profilePage.findViewById(R.id.myTokensEmptyState)
         
         // Initialize presale page views
         presaleRecyclerView = presalePage.findViewById(R.id.presaleRecyclerView)
@@ -194,6 +261,25 @@ class MainActivity : AppCompatActivity() {
         }
         presaleRecyclerView.layoutManager = LinearLayoutManager(this)
         presaleRecyclerView.adapter = presaleAdapter
+        
+        // Add one sample token for testing
+        if (createdTokens.isEmpty()) {
+            createdTokens.add(
+                CreatedTokenInfo(
+                    name = "Moon Token",
+                    symbol = "MOON",
+                    description = "To the moon!",
+                    supply = 1_000_000_000L,
+                    launchType = LaunchType.PRESALE,
+                    tokenAddress = "SampleAddr123",
+                    chatLink = "https://t.me/moontoken",
+                    status = "Voting"
+                )
+            )
+        }
+        
+        // Setup My Tokens section
+        setupMyTokens()
         
         // Initialize leaderboard page views
         leaderboardPage = findViewById(R.id.leaderboardPage)
@@ -211,13 +297,37 @@ class MainActivity : AppCompatActivity() {
         activityFeedRecyclerView = activityPage.findViewById(R.id.activityFeedRecyclerView)
         emptyStateLayout = activityPage.findViewById<LinearLayout>(R.id.emptyStateLayout)
         exploreCreatorsButton = activityPage.findViewById(R.id.exploreCreatorsButton)
+        leaderboardButton = activityPage.findViewById(R.id.leaderboardButton)
         activityLikesCount = activityPage.findViewById(R.id.activityLikesCount)
         activityPresalesCount = activityPage.findViewById(R.id.activityPresalesCount)
         activityFollowingCount = activityPage.findViewById(R.id.activityFollowingCount)
         
+        // Initialize create token page views
+        createTokenPage = findViewById(R.id.createTokenPage)
+        pageTitle = createTokenPage.findViewById(R.id.pageTitle)
+        selectedImage = createTokenPage.findViewById(R.id.selectedImage)
+        imagePlaceholder = createTokenPage.findViewById(R.id.imagePlaceholder)
+        removeImageButton = createTokenPage.findViewById(R.id.removeImageButton)
+        takePhotoButton = createTokenPage.findViewById(R.id.takePhotoButton)
+        selectImageButton = createTokenPage.findViewById(R.id.selectImageButton)
+        tokenNameInput = createTokenPage.findViewById(R.id.tokenNameInput)
+        tokenSymbolInput = createTokenPage.findViewById(R.id.tokenSymbolInput)
+        tokenDescriptionInput = createTokenPage.findViewById(R.id.tokenDescriptionInput)
+        tokenSupplySpinner = createTokenPage.findViewById(R.id.tokenSupplySpinner)
+        tokenChatLinkInput = createTokenPage.findViewById(R.id.tokenChatLinkInput)
+        launchTypeGroup = createTokenPage.findViewById(R.id.launchTypeGroup)
+        instantLaunchCard = createTokenPage.findViewById(R.id.instantLaunchCard)
+        proposeTokenCard = createTokenPage.findViewById(R.id.proposeTokenCard)
+        presaleOptionsLayout = createTokenPage.findViewById(R.id.presaleOptionsLayout)
+        createTokenButton = createTokenPage.findViewById(R.id.createTokenButton)
+        costInfoTitle = createTokenPage.findViewById(R.id.costInfoTitle)
+        costInfoDescription = createTokenPage.findViewById(R.id.costInfoDescription)
+        costInfoLayout = createTokenPage.findViewById(R.id.costInfoLayout)
+        
         setupLeaderboardTabs()
         setupLeaderboardRecyclerViews()
         setupActivityPage()
+        setupCreateTokenPage()
     }
     
     private fun setupWalletManager() {
@@ -288,8 +398,8 @@ class MainActivity : AppCompatActivity() {
                     showPresaleTab()
                     true
                 }
-                R.id.nav_rankings -> {
-                    showLeaderboardTab()
+                R.id.nav_create -> {
+                    showCreateTokenTab()
                     true
                 }
                 R.id.nav_activities -> {
@@ -405,6 +515,7 @@ class MainActivity : AppCompatActivity() {
         profilePage.visibility = View.GONE
         presalePage.visibility = View.GONE
         leaderboardPage.visibility = View.GONE
+        createTokenPage.visibility = View.GONE
         activityPage.visibility = View.GONE
     }
     
@@ -413,6 +524,7 @@ class MainActivity : AppCompatActivity() {
         profilePage.visibility = View.VISIBLE
         presalePage.visibility = View.GONE
         leaderboardPage.visibility = View.GONE
+        createTokenPage.visibility = View.GONE
         activityPage.visibility = View.GONE
     }
     
@@ -421,8 +533,18 @@ class MainActivity : AppCompatActivity() {
         profilePage.visibility = View.GONE
         presalePage.visibility = View.VISIBLE
         leaderboardPage.visibility = View.GONE
+        createTokenPage.visibility = View.GONE
         activityPage.visibility = View.GONE
         updateWalletBalance()
+    }
+    
+    private fun showCreateTokenTab() {
+        discoverContent.visibility = View.GONE
+        profilePage.visibility = View.GONE
+        presalePage.visibility = View.GONE
+        leaderboardPage.visibility = View.GONE
+        createTokenPage.visibility = View.VISIBLE
+        activityPage.visibility = View.GONE
     }
     
     private fun showActivityTab() {
@@ -430,6 +552,7 @@ class MainActivity : AppCompatActivity() {
         profilePage.visibility = View.GONE
         presalePage.visibility = View.GONE
         leaderboardPage.visibility = View.GONE
+        createTokenPage.visibility = View.GONE
         activityPage.visibility = View.VISIBLE
     }
     
@@ -449,12 +572,17 @@ class MainActivity : AppCompatActivity() {
             tokensLikedCount.text = "0"
             tokensPassedCount.text = "0" 
             totalSwipesCount.text = "0"
+            
+            // Show My Tokens section when connected
+            myTokensCard.visibility = View.VISIBLE
+            updateMyTokensDisplay()
         } else {
             // Wallet disconnected - hide profile details
             profileWalletButton.text = "Connect Solana Wallet"
             walletStatusText.text = "Connect your wallet to see your profile details"
             profileDetailsCard.visibility = View.GONE
             activityCard.visibility = View.GONE
+            myTokensCard.visibility = View.GONE
         }
     }
     
@@ -518,6 +646,7 @@ class MainActivity : AppCompatActivity() {
         profilePage.visibility = View.GONE
         presalePage.visibility = View.GONE
         leaderboardPage.visibility = View.VISIBLE
+        createTokenPage.visibility = View.GONE
         activityPage.visibility = View.GONE
     }
     
@@ -611,6 +740,11 @@ class MainActivity : AppCompatActivity() {
             showToast("Navigate to creator discovery (placeholder)")
             // In real app, this would navigate to discover tab or creator list
             bottomNavigation.selectedItemId = R.id.nav_discover
+        }
+        
+        // Setup leaderboard button
+        leaderboardButton.setOnClickListener {
+            showLeaderboardOverlay()
         }
         
         // Update activity stats (mock data for demo)
@@ -732,6 +866,399 @@ class MainActivity : AppCompatActivity() {
             number >= 1000000 -> String.format("%.1fM", number / 1000000.0)
             number >= 1000 -> String.format("%.1fK", number / 1000.0)
             else -> number.toString()
+        }
+    }
+    
+    private fun setupCreateTokenPage() {
+        // Setup photo capture buttons
+        takePhotoButton.setOnClickListener {
+            if (checkCameraPermission()) {
+                takePicture()
+            } else {
+                requestCameraPermission()
+            }
+        }
+        
+        selectImageButton.setOnClickListener {
+            selectImageFromGallery()
+        }
+        
+        removeImageButton.setOnClickListener {
+            removeSelectedImage()
+        }
+        
+        // Setup launch type radio group
+        launchTypeGroup.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                R.id.instantLaunchRadio -> {
+                    updateUIForInstantLaunch()
+                }
+                R.id.presaleLaunchRadio -> {
+                    updateUIForCommunityPresale()
+                }
+            }
+        }
+        
+        // Setup card click listeners to select radio buttons
+        instantLaunchCard.setOnClickListener {
+            launchTypeGroup.check(R.id.instantLaunchRadio)
+        }
+        
+        proposeTokenCard.setOnClickListener {
+            launchTypeGroup.check(R.id.presaleLaunchRadio)
+        }
+        
+        // Setup supply spinner
+        setupSupplySpinner()
+        
+        // Initialize with propose token selected (default)
+        updateUIForCommunityPresale()
+        
+        // Setup create token button
+        createTokenButton.setOnClickListener {
+            createToken()
+        }
+    }
+    
+    private fun setupSupplySpinner() {
+        val supplyOptions = arrayOf(
+            "1 Billion (1,000,000,000)",
+            "500 Million (500,000,000)",
+            "100 Million (100,000,000)",
+            "10 Million (10,000,000)",
+            "1 Million (1,000,000)"
+        )
+        
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, supplyOptions)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        tokenSupplySpinner.adapter = adapter
+        
+        // Set default to 1 Billion (index 0)
+        tokenSupplySpinner.setSelection(0)
+    }
+    
+    private fun updateUIForInstantLaunch() {
+        pageTitle.text = "🚀 Create Token"
+        createTokenButton.text = "🚀 Launch Token"
+        presaleOptionsLayout.visibility = View.GONE
+        
+        // Update cost information
+        costInfoTitle.text = "Instant Launch"
+        costInfoDescription.text = "≈ 0.1 SOL + fees"
+        costInfoLayout.setBackgroundColor(0xFFFFF3CD.toInt())
+        
+        // Update card selection states
+        updateCardSelectionStates(true)
+    }
+    
+    private fun updateUIForCommunityPresale() {
+        pageTitle.text = "🗳️ Propose a Token"
+        createTokenButton.text = "📝 Submit Proposal"
+        presaleOptionsLayout.visibility = View.VISIBLE
+        
+        // Update cost information
+        costInfoTitle.text = "Proposal"
+        costInfoDescription.text = "Free • Needs 80 votes"
+        costInfoLayout.setBackgroundColor(0xFFEBF8FF.toInt())
+        
+        // Update card selection states
+        updateCardSelectionStates(false)
+    }
+    
+    private fun updateCardSelectionStates(instantLaunchSelected: Boolean) {
+        if (instantLaunchSelected) {
+            // Instant Launch selected - show it prominently
+            instantLaunchCard.visibility = View.VISIBLE
+            instantLaunchCard.setCardBackgroundColor(0xFFEDE9FE.toInt()) // Light purple background
+            instantLaunchCard.cardElevation = 8f // Higher elevation for selection
+            instantLaunchCard.alpha = 1.0f // Fully visible
+            
+            // Propose Token unselected - gray it out and make it smaller
+            proposeTokenCard.visibility = View.VISIBLE
+            proposeTokenCard.setCardBackgroundColor(0xFFF3F4F6.toInt()) // Light gray background
+            proposeTokenCard.cardElevation = 1f // Lower elevation
+            proposeTokenCard.alpha = 0.6f // Faded
+        } else {
+            // Propose Token selected - show it prominently
+            proposeTokenCard.visibility = View.VISIBLE
+            proposeTokenCard.setCardBackgroundColor(0xFFEDE9FE.toInt()) // Light purple background
+            proposeTokenCard.cardElevation = 8f // Higher elevation for selection
+            proposeTokenCard.alpha = 1.0f // Fully visible
+            
+            // Instant Launch unselected - gray it out and make it smaller
+            instantLaunchCard.visibility = View.VISIBLE
+            instantLaunchCard.setCardBackgroundColor(0xFFF3F4F6.toInt()) // Light gray background
+            instantLaunchCard.cardElevation = 1f // Lower elevation
+            instantLaunchCard.alpha = 0.6f // Faded
+        }
+    }
+    
+    private fun checkCameraPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    }
+    
+    private fun requestCameraPermission() {
+        requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+    }
+    
+    private fun takePicture() {
+        val imageFile = File(getExternalFilesDir(null), "token_image_${System.currentTimeMillis()}.jpg")
+        tempImageUri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", imageFile)
+        takePictureLauncher.launch(tempImageUri)
+    }
+    
+    private fun selectImageFromGallery() {
+        selectImageLauncher.launch("image/*")
+    }
+    
+    private fun displaySelectedImage(uri: Uri) {
+        selectedImage.setImageURI(uri)
+        selectedImage.visibility = View.VISIBLE
+        imagePlaceholder.visibility = View.GONE
+        removeImageButton.visibility = View.VISIBLE
+    }
+    
+    private fun removeSelectedImage() {
+        currentImageUri = null
+        selectedImage.visibility = View.GONE
+        imagePlaceholder.visibility = View.VISIBLE
+        removeImageButton.visibility = View.GONE
+        selectedImage.setImageURI(null)
+    }
+    
+    private fun createToken() {
+        // Validate inputs
+        val name = tokenNameInput.text?.toString()?.trim()
+        val symbol = tokenSymbolInput.text?.toString()?.trim()?.uppercase()
+        val description = tokenDescriptionInput.text?.toString()?.trim()
+        val chatLink = tokenChatLinkInput.text?.toString()?.trim()
+        if (name.isNullOrEmpty()) {
+            showToast("Please enter token name")
+            return
+        }
+        
+        if (symbol.isNullOrEmpty()) {
+            showToast("Please enter token symbol")
+            return
+        }
+        
+        if (description.isNullOrEmpty()) {
+            showToast("Please enter token description")
+            return
+        }
+        
+        // Get supply from spinner selection
+        val supply = when (tokenSupplySpinner.selectedItemPosition) {
+            0 -> 1_000_000_000L // 1 Billion
+            1 -> 500_000_000L   // 500 Million
+            2 -> 100_000_000L   // 100 Million
+            3 -> 10_000_000L    // 10 Million
+            4 -> 1_000_000L     // 1 Million
+            else -> 1_000_000_000L // Default to 1 Billion
+        }
+        
+        // Check wallet connection
+        if (!walletManager.isWalletConnected()) {
+            showToast("Please connect your wallet first")
+            return
+        }
+        
+        // Get launch type
+        val launchType = when (launchTypeGroup.checkedRadioButtonId) {
+            R.id.presaleLaunchRadio -> LaunchType.PRESALE
+            else -> LaunchType.INSTANT
+        }
+        
+        // Create token data
+        val tokenData = CreateTokenData(
+            name = name,
+            symbol = symbol,
+            description = description,
+            initialSupply = supply,
+            imageUri = currentImageUri,
+            launchType = launchType,
+            presaleDurationHours = if (launchType == LaunchType.PRESALE) 24 else null, // Fixed 24-hour duration
+            chatLink = if (chatLink.isNullOrEmpty()) null else chatLink
+        )
+        
+        // Show creation in progress
+        createTokenButton.isEnabled = false
+        createTokenButton.text = "Creating Token..."
+        
+        // Simulate token creation (in real app, this would call Solana Mobile Stack APIs)
+        lifecycleScope.launch {
+            kotlinx.coroutines.delay(3000) // Simulate network delay
+            
+            // Mock successful creation
+            val result = TokenCreationResult(
+                success = true,
+                tokenAddress = "TokenAddr${System.currentTimeMillis()}",
+                transactionSignature = "TxSig${System.currentTimeMillis()}"
+            )
+            
+            handleTokenCreationResult(result)
+        }
+    }
+    
+    private fun handleTokenCreationResult(result: TokenCreationResult) {
+        createTokenButton.isEnabled = true
+        createTokenButton.text = "🚀 Create Token"
+        
+        if (result.success) {
+            showToast("✅ Token created successfully!")
+            
+            // Store the created token (get data from the last form submission)
+            val name = tokenNameInput.text?.toString()?.trim() ?: ""
+            val symbol = tokenSymbolInput.text?.toString()?.trim()?.uppercase() ?: ""
+            val description = tokenDescriptionInput.text?.toString()?.trim() ?: ""
+            val chatLink = tokenChatLinkInput.text?.toString()?.trim()
+            val supply = when (tokenSupplySpinner.selectedItemPosition) {
+                0 -> 1_000_000_000L
+                1 -> 500_000_000L
+                2 -> 100_000_000L
+                3 -> 10_000_000L
+                4 -> 1_000_000L
+                else -> 1_000_000_000L
+            }
+            val launchType = when (launchTypeGroup.checkedRadioButtonId) {
+                R.id.presaleLaunchRadio -> LaunchType.PRESALE
+                else -> LaunchType.INSTANT
+            }
+            
+            val createdToken = CreatedTokenInfo(
+                name = name,
+                symbol = symbol,
+                description = description,
+                supply = supply,
+                launchType = launchType,
+                tokenAddress = result.tokenAddress ?: "Unknown",
+                chatLink = if (chatLink.isNullOrEmpty()) null else chatLink,
+                status = if (launchType == LaunchType.PRESALE) "Voting" else "Active"
+            )
+            
+            createdTokens.add(createdToken)
+            
+            // Debug log
+            android.util.Log.d("MyTokens", "Token added! Total tokens: ${createdTokens.size}")
+            
+            // Update My Tokens display
+            updateMyTokensDisplay()
+            
+            // Show success dialog
+            AlertDialog.Builder(this)
+                .setTitle("🎉 Token Created!")
+                .setMessage("Your token has been created successfully!\n\nToken Address: ${result.tokenAddress}\nTransaction: ${result.transactionSignature}")
+                .setPositiveButton("View in Profile") { _, _ ->
+                    // Navigate to profile tab to see the token
+                    bottomNavigation.selectedItemId = R.id.nav_profile
+                }
+                .setNegativeButton("Create Another", null)
+                .show()
+                
+            // Reset form
+            resetCreateTokenForm()
+        } else {
+            showToast("❌ Failed to create token: ${result.errorMessage}")
+        }
+    }
+    
+    private fun resetCreateTokenForm() {
+        tokenNameInput.text?.clear()
+        tokenSymbolInput.text?.clear()
+        tokenDescriptionInput.text?.clear()
+        tokenChatLinkInput.text?.clear()
+        tokenSupplySpinner.setSelection(0) // Reset to 1 Billion
+        removeSelectedImage()
+        launchTypeGroup.check(R.id.presaleLaunchRadio) // Default to Propose Token
+        updateUIForCommunityPresale() // Update UI to show proposal info
+    }
+    
+    private fun showLeaderboardOverlay() {
+        // Simple approach: temporarily show leaderboard page
+        showLeaderboardTab()
+        showToast("🏆 Leaderboard opened! Use back button to return to Activities")
+        
+        // Show close button
+        val closeButton = leaderboardPage.findViewById<Button>(R.id.closeLeaderboardButton)
+        closeButton.visibility = View.VISIBLE
+        closeButton.setOnClickListener {
+            // Return to Activities tab
+            showActivityTab()
+            closeButton.visibility = View.GONE
+        }
+    }
+    
+    private fun setupMyTokens() {
+        myTokensRecyclerView.layoutManager = LinearLayoutManager(this)
+        
+        // For debugging, make My Tokens always visible
+        myTokensCard.visibility = View.VISIBLE
+        
+        updateMyTokensDisplay()
+    }
+    
+    private fun updateMyTokensDisplay() {
+        val emptyState = profilePage.findViewById<LinearLayout>(R.id.myTokensEmptyState)
+        
+        // Debug log
+        android.util.Log.d("MyTokens", "Updating display. Token count: ${createdTokens.size}")
+        createdTokens.forEachIndexed { index, token ->
+            android.util.Log.d("MyTokens", "Token $index: ${token.name} (${token.symbol})")
+        }
+        
+        if (createdTokens.isEmpty()) {
+            myTokensRecyclerView.visibility = View.GONE
+            emptyState.visibility = View.VISIBLE
+        } else {
+            myTokensRecyclerView.visibility = View.VISIBLE
+            emptyState.visibility = View.GONE
+            
+            val adapter = MyTokensAdapter(createdTokens) { token ->
+                // Handle token view click - show detailed token info
+                showTokenDetails(token)
+            }
+            myTokensRecyclerView.adapter = adapter
+        }
+    }
+    
+    private fun showTokenDetails(token: CreatedTokenInfo) {
+        val launchTypeText = when (token.launchType) {
+            LaunchType.INSTANT -> "Instant Launch"
+            LaunchType.PRESALE -> "Community Proposal"
+        }
+        
+        val chatLinkText = if (!token.chatLink.isNullOrEmpty()) {
+            "\n\nCommunity Chat: ${token.chatLink}"
+        } else {
+            "\n\nNo community chat link"
+        }
+        
+        AlertDialog.Builder(this)
+            .setTitle("${token.name} (${token.symbol})")
+            .setMessage(
+                "Description: ${token.description}\n" +
+                "Launch Type: $launchTypeText\n" +
+                "Supply: ${formatSupplyForDisplay(token.supply)}\n" +
+                "Status: ${token.status}\n" +
+                "Token Address: ${token.tokenAddress}" +
+                chatLinkText
+            )
+            .setPositiveButton("Copy Address") { _, _ ->
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("Token Address", token.tokenAddress)
+                clipboard.setPrimaryClip(clip)
+                showToast("Token address copied to clipboard")
+            }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+    
+    private fun formatSupplyForDisplay(supply: Long): String {
+        return when {
+            supply >= 1_000_000_000 -> "${supply / 1_000_000_000}B"
+            supply >= 1_000_000 -> "${supply / 1_000_000}M"
+            supply >= 1_000 -> "${supply / 1_000}K"
+            else -> supply.toString()
         }
     }
     

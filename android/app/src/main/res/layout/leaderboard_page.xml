@@ -25,6 +25,17 @@
             android:textStyle="bold"
             android:textColor="#333333" />
 
+        <Button
+            android:id="@+id/closeLeaderboardButton"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@android:drawable/btn_dialog"
+            android:text="✕"
+            android:textColor="#666"
+            android:textSize="16sp"
+            android:visibility="gone" />
+
     </LinearLayout>
 
     <!-- Tab Layout -->
