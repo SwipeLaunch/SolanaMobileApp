@@ -1240,8 +1240,9 @@ class MainActivity : AppCompatActivity() {
             }
             
             android.util.Log.d("MainActivity", "Total followed users now: ${followedUsers.size}")
+            android.util.Log.d("MainActivity", "Current followed users: ${followedUsers.joinToString()}")
             
-            // Update following activities and count
+            // Update following activities and count immediately
             loadFollowingActivities()
             updateFollowingCountFromActivities()
         }
@@ -1340,10 +1341,17 @@ class MainActivity : AppCompatActivity() {
                 // Clear existing data
                 followingActivityData.clear()
                 
+                // Always refresh the adapter first
+                runOnUiThread {
+                    followingActivityAdapter.notifyDataSetChanged()
+                }
+                
                 if (followedUsers.isEmpty()) {
                     android.util.Log.d("MainActivity", "No followed users, hiding following section")
                     runOnUiThread {
                         followingSection.visibility = View.GONE
+                        followingRecyclerView.visibility = View.GONE
+                        emptyStateLayout.visibility = View.VISIBLE
                     }
                     return@launch
                 }
@@ -1352,6 +1360,8 @@ class MainActivity : AppCompatActivity() {
                 val allTokens = databaseService.getAllTokens()
                 val votes = databaseService.getUserVotes()
                     .filter { followedUsers.contains(it.user_wallet) }
+                
+                android.util.Log.d("MainActivity", "Found ${votes.size} votes from followed users")
                 
                 // Convert votes to activity data
                 votes.forEach { vote ->
@@ -1376,6 +1386,7 @@ class MainActivity : AppCompatActivity() {
                             )
                         )
                         followingActivityData.add(activityData)
+                        android.util.Log.d("MainActivity", "Added activity for ${vote.user_wallet} - ${token.token_name}")
                     }
                 }
                 
@@ -1391,17 +1402,19 @@ class MainActivity : AppCompatActivity() {
                     // Show/hide following section and empty state properly
                     if (followingActivityData.isNotEmpty()) {
                         followingSection.visibility = View.VISIBLE
+                        followingRecyclerView.visibility = View.VISIBLE
                         emptyStateLayout.visibility = View.GONE
                         android.util.Log.d("MainActivity", "Showing following section with ${followingActivityData.size} activities")
                     } else {
-                        followingSection.visibility = View.GONE
-                        // Only show empty state if we have followed users but no activities
+                        // If we have followed users but no activities, show empty message
                         if (followedUsers.isNotEmpty()) {
+                            followingSection.visibility = View.VISIBLE
+                            followingRecyclerView.visibility = View.GONE
                             emptyStateLayout.visibility = View.VISIBLE
                             android.util.Log.d("MainActivity", "Showing empty state - followed users but no activities")
                         } else {
-                            emptyStateLayout.visibility = View.VISIBLE
-                            android.util.Log.d("MainActivity", "Showing empty state - no followed users")
+                            followingSection.visibility = View.GONE
+                            android.util.Log.d("MainActivity", "Hiding following section - no followed users")
                         }
                     }
                 }
