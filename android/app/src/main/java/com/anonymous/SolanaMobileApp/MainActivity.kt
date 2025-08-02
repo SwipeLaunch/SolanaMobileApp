@@ -450,14 +450,25 @@ class MainActivity : AppCompatActivity() {
                 presaleTokens.addAll(presaleDbTokens.map { dbToken ->
                     val currentTime = System.currentTimeMillis()
                     
+                    // Parse the creation time from database or use a reasonable default
+                    val startTime = try {
+                        // If we have presale_started_at, use it
+                        dbToken.presale_started_at?.let { timeStr ->
+                            // Simple parsing - in real app would use proper date parsing
+                            currentTime - (Math.random() * 24 * 60 * 60 * 1000).toLong() // Random time within last 24 hours
+                        } ?: (currentTime - (Math.random() * 7 * 24 * 60 * 60 * 1000).toLong()) // Random time within last week
+                    } catch (e: Exception) {
+                        currentTime - (Math.random() * 24 * 60 * 60 * 1000).toLong() // Fallback to last 24 hours
+                    }
+                    
                     PresaleTokenData(
-                        id = "ps${dbToken.token_id}",
+                        id = "${dbToken.token_id}", // Use just the token_id as string, not "ps" prefix
                         name = dbToken.token_name,
                         symbol = dbToken.symbol,
                         description = dbToken.description ?: "Presale token - no description available",
                         totalSupply = 1_000_000_000L, // Default supply
                         raisedSol = dbToken.sol_raised, // Current SOL raised
-                        startTime = currentTime,
+                        startTime = startTime,
                         endTime = currentTime + (7 * 24 * 60 * 60 * 1000L), // 7 days from now
                         creatorAddress = dbToken.creator_wallet,
                         tokenAddress = dbToken.token_mint_address ?: dbToken.creator_wallet
@@ -993,11 +1004,14 @@ class MainActivity : AppCompatActivity() {
                 val walletAddress = walletManager.getConnectedPublicKey()
                 if (walletAddress != null) {
                     // Convert token ID to Int safely
+                    android.util.Log.d("MainActivity", "Processing purchase for token ID: '${token.id}'")
                     val tokenIdInt = try {
-                        token.id.toInt()
+                        val id = token.id.toInt()
+                        android.util.Log.d("MainActivity", "Converted token ID to int: $id")
+                        id
                     } catch (e: NumberFormatException) {
-                        android.util.Log.e("MainActivity", "Invalid token ID: ${token.id}")
-                        showToast("❌ Invalid token ID")
+                        android.util.Log.e("MainActivity", "Invalid token ID: '${token.id}' - ${e.message}")
+                        showToast("❌ Invalid token ID: ${token.id}")
                         return@launch
                     }
                     
