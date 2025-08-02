@@ -31,6 +31,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bottomNavigation: BottomNavigationView
     private lateinit var swipeContainer: FrameLayout
     private lateinit var walletManager: WalletManager
+    private lateinit var databaseService: DatabaseService
     private val tokenCards = mutableListOf<SwipeableTokenCard>()
     private var currentCardIndex = 0
     
@@ -132,71 +133,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    // Sample token data
-    private val tokens = listOf(
-        TokenData("1", "MOON Token", "cryptoking", "🚀 To the moon! The next big thing in DeFi. Diamond hands only! 💎🙌", 1247,
-                 "ABC123...XYZ789", "cryptoking", "sl_moon", 2500, 15420, 8, "https://discord.gg/moontoken"),
-        TokenData("2", "DOGE 2.0", "memeLord", "🐕 Much wow, very token! The evolution of meme coins on Solana blockchain.", 856,
-                 "DEF456...UVW012", "memelord99", "sl_doge", 1800, 8560, 5, "https://telegram.org/dogetoken"),
-        TokenData("3", "SOL CAT", "catWhisperer", "🐱 Purr-fect token for cat lovers! Meow your way to financial freedom with SOL CAT.", 2103,
-                 "GHI789...RST345", "catwhisperer", "sl_cat", 3200, 21030, 12, "https://discord.gg/solcat"),
-        TokenData("4", "LAMBO Token", "speedDemon", "🏎️ When lambo? NOW! The token that will actually get you that lambo. Built different.", 3421,
-                 "JKL012...OPQ678", "speeddemon", "sl_lambo", 5000, 34210, 15, "https://telegram.org/lambo"),
-        TokenData("5", "DIAMOND", "gemHunter", "💎 Unbreakable hands, unbreakable token. DIAMOND is forever on Solana blockchain.", 567,
-                 "MNO345...TUV901", "gemhunter", "sl_diamond", 1200, 5670, 3, "https://discord.gg/diamond")
-    )
+    // Real token data from database - will be loaded dynamically
+    private var tokens = mutableListOf<TokenData>()
     
-    // Sample presale data
-    private val presaleTokens = listOf(
-        PresaleTokenData("ps1", "ROCKET Token", "ROCKET", "🚀 Next-gen DeFi protocol with advanced yield farming capabilities", 
-                        1_000_000_000L, 75.2, System.currentTimeMillis(), System.currentTimeMillis() + (2 * 24 * 60 * 60 * 1000L), 
-                        "Creator1", "TokenAddr1"),
-        PresaleTokenData("ps2", "MOON Coin", "MOON", "🌙 Community-driven memecoin with deflationary tokenomics", 
-                        500_000_000L, 42.8, System.currentTimeMillis(), System.currentTimeMillis() + (5 * 24 * 60 * 60 * 1000L), 
-                        "Creator2", "TokenAddr2"),
-        PresaleTokenData("ps3", "DIAMOND", "DMD", "💎 Premium store of value token with limited supply and staking rewards", 
-                        100_000_000L, 89.1, System.currentTimeMillis(), System.currentTimeMillis() + (1 * 24 * 60 * 60 * 1000L), 
-                        "Creator3", "TokenAddr3"),
-        PresaleTokenData("ps4", "SOLAR Power", "SOLAR", "☀️ Green energy token supporting sustainable blockchain mining", 
-                        2_000_000_000L, 23.5, System.currentTimeMillis(), System.currentTimeMillis() + (7 * 24 * 60 * 60 * 1000L), 
-                        "Creator4", "TokenAddr4"),
-        PresaleTokenData("ps5", "GALAXY Token", "GLXY", "🌌 Cross-chain gaming token for the metaverse ecosystem", 
-                        750_000_000L, 67.3, System.currentTimeMillis(), System.currentTimeMillis() + (3 * 24 * 60 * 60 * 1000L), 
-                        "Creator5", "TokenAddr5")
-    )
+    // Real presale data from database - will be loaded dynamically
+    private var presaleTokens = mutableListOf<PresaleTokenData>()
     
-    // Sample leaderboard data
-    private val tokenLaunchedLeaderboard = listOf(
-        TokenLaunchedData(1, "MOON Token", "MOON", 2_500_000.0, 500_000_000.0, "cryptoking", System.currentTimeMillis()),
-        TokenLaunchedData(2, "ROCKET Coin", "ROCKET", 1_800_000.0, 360_000_000.0, "spaceexplorer", System.currentTimeMillis()),
-        TokenLaunchedData(3, "DIAMOND", "DMD", 1_200_000.0, 240_000_000.0, "gemhunter", System.currentTimeMillis()),
-        TokenLaunchedData(4, "SOLAR Power", "SOLAR", 950_000.0, 190_000_000.0, "greenenergy", System.currentTimeMillis()),
-        TokenLaunchedData(5, "GALAXY Token", "GLXY", 750_000.0, 150_000_000.0, "metaverse", System.currentTimeMillis())
-    )
-    
-    private val slStakedLeaderboard = listOf(
-        SLTokenStakedData(1, "ABC123...XYZ789", "cryptoking", "cryptoking.sol", 2_500_000.0, 90 * 24 * 60 * 60 * 1000L, 125_000.0),
-        SLTokenStakedData(2, "DEF456...UVW012", "moonwhale", null, 1_800_000.0, 60 * 24 * 60 * 60 * 1000L, 90_000.0),
-        SLTokenStakedData(3, "GHI789...RST345", null, "trader.sol", 1_200_000.0, 45 * 24 * 60 * 60 * 1000L, 60_000.0),
-        SLTokenStakedData(4, "JKL012...OPQ678", "degenape", null, 950_000.0, 30 * 24 * 60 * 60 * 1000L, 47_500.0),
-        SLTokenStakedData(5, "MNO345...TUV901", null, "hodler.sol", 750_000.0, 15 * 24 * 60 * 60 * 1000L, 37_500.0)
-    )
-    
-    private val creatorMostLikesLeaderboard = listOf(
-        CreatorMostLikesData(1, "cryptoking", "cryptoking", 1_250_000, 15, 83_333.0, "MOON Token", 987_654),
-        CreatorMostLikesData(2, "memelord", "memelord99", 950_000, 12, 79_167.0, "DOGE 2.0", 456_789),
-        CreatorMostLikesData(3, "gemhunter", "gemhunter", 850_000, 10, 85_000.0, "DIAMOND", 234_567),
-        CreatorMostLikesData(4, "spaceexplorer", "spaceX_fan", 720_000, 8, 90_000.0, "ROCKET Coin", 345_678),
-        CreatorMostLikesData(5, "catwhisperer", "catwhisperer", 650_000, 9, 72_222.0, "SOL CAT", 123_456)
-    )
-    
-    private val creatorMostLaunchedLeaderboard = listOf(
-        CreatorMostLaunchedData(1, "prolific_dev", "prolific_dev", 25, 5_250_000.0, 0.72, "MEGA Token", 1_500_000.0),
-        CreatorMostLaunchedData(2, "token_factory", "token_factory", 18, 3_200_000.0, 0.67, "SUPER Coin", 800_000.0),
-        CreatorMostLaunchedData(3, "cryptoking", "cryptoking", 15, 4_100_000.0, 0.80, "MOON Token", 2_500_000.0),
-        CreatorMostLaunchedData(4, "serial_launcher", "serial_launcher", 12, 2_100_000.0, 0.58, "WINNER Token", 450_000.0),
-        CreatorMostLaunchedData(5, "defi_builder", "defi_builder", 10, 1_800_000.0, 0.70, "YIELD Token", 350_000.0)
-    )
+    // Real leaderboard data from database - will be loaded dynamically
+    private var tokenLaunchedLeaderboard = mutableListOf<TokenLaunchedData>()
+    private var slStakedLeaderboard = mutableListOf<SLTokenStakedData>()
+    private var creatorMostLikesLeaderboard = mutableListOf<CreatorMostLikesData>()
+    private var creatorMostLaunchedLeaderboard = mutableListOf<CreatorMostLaunchedData>()
     
     // Sample activity feed data
     private val activityFeedData = listOf(
@@ -221,6 +168,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         
         initViews()
+        setupDatabase()
         setupWalletManager()
         setupBottomNavigation()
         setupSwipeCards()
@@ -328,6 +276,347 @@ class MainActivity : AppCompatActivity() {
         setupLeaderboardRecyclerViews()
         setupActivityPage()
         setupCreateTokenPage()
+    }
+    
+    private fun setupDatabase() {
+        databaseService = DatabaseService()
+        
+        // Test database connection with detailed logging
+        lifecycleScope.launch {
+            android.util.Log.d("Database", "Starting database connection test...")
+            
+            val isConnected = databaseService.testConnection()
+            if (isConnected) {
+                android.util.Log.d("Database", "✅ Connection successful!")
+                showToast("✅ Database connected!")
+                
+                // Test reading from all tables
+                testDatabaseReads()
+            } else {
+                android.util.Log.e("Database", "❌ Connection failed!")
+                showToast("⚠️ Using offline mode - database connection failed")
+            }
+        }
+    }
+    
+    private suspend fun testDatabaseReads() {
+        android.util.Log.d("Database", "Testing database read operations...")
+        
+        // Test tokens table with raw data first
+        try {
+            val rawResult = databaseService.getRawTokenData()
+            android.util.Log.d("Database", "📊 Raw tokens result: $rawResult")
+            
+            val tokens = databaseService.getAllTokens()
+            android.util.Log.d("Database", "📊 Tokens table: Found ${tokens.size} records")
+            if (tokens.isNotEmpty()) {
+                tokens.take(3).forEach { token ->
+                    android.util.Log.d("Database", "  Token: ${token.token_name} (${token.symbol}) by ${token.creator_wallet} - Votes: ${token.vote_count}")
+                }
+            }
+            showToast("📊 Found ${tokens.size} tokens in database")
+        } catch (e: Exception) {
+            android.util.Log.e("Database", "❌ Error reading tokens: ${e.message}")
+        }
+        
+        // Test users table
+        try {
+            val users = databaseService.getUsers()
+            android.util.Log.d("Database", "👥 Users table: Found ${users.size} records")
+            if (users.isNotEmpty()) {
+                users.take(3).forEach { user ->
+                    android.util.Log.d("Database", "  User: ${user.wallet_address} (${user.twitter_handle ?: "no twitter"})")
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("Database", "❌ Error reading users: ${e.message}")
+        }
+        
+        // Test user_votes table
+        try {
+            val votes = databaseService.getUserVotes()
+            android.util.Log.d("Database", "🗳️ User votes table: Found ${votes.size} records")
+            if (votes.isNotEmpty()) {
+                votes.take(3).forEach { vote ->
+                    android.util.Log.d("Database", "  Vote: User ${vote.user_wallet} voted for token ${vote.token_id}")
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("Database", "❌ Error reading votes: ${e.message}")
+        }
+        
+        // Test presale_participants table
+        try {
+            val participants = databaseService.getPresaleParticipants()
+            android.util.Log.d("Database", "🚀 Presale participants: Found ${participants.size} records")
+            if (participants.isNotEmpty()) {
+                participants.take(3).forEach { participant ->
+                    android.util.Log.d("Database", "  Participant: ${participant.user_wallet} contributed ${participant.sol_contributed} SOL to token ${participant.token_id}")
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("Database", "❌ Error reading participants: ${e.message}")
+        }
+        
+        android.util.Log.d("Database", "Database read tests completed!")
+        
+        // Now load the real data into the UI
+        loadTokensFromDatabase()
+        loadPresaleDataFromDatabase()
+        loadLeaderboardData()
+    }
+    
+    private suspend fun loadTokensFromDatabase() {
+        try {
+            val allDbTokens = databaseService.getAllTokens()
+            // Filter to only show ACTIVE tokens on Discover page
+            val activeTokens = allDbTokens.filter { it.status == "active" }
+            
+            if (activeTokens.isNotEmpty()) {
+                android.util.Log.d("MainActivity", "Converting ${activeTokens.size} active tokens (out of ${allDbTokens.size} total)")
+                
+                // Convert database tokens to UI token format
+                tokens.clear()
+                tokens.addAll(activeTokens.map { dbToken ->
+                    TokenData(
+                        id = dbToken.token_id?.toString() ?: "0",
+                        name = dbToken.token_name,
+                        creator = extractUsernameFromWallet(dbToken.creator_wallet),
+                        description = dbToken.description ?: "No description available",
+                        likes = dbToken.vote_count,
+                        creatorWallet = dbToken.creator_wallet,
+                        creatorTwitter = extractUsernameFromWallet(dbToken.creator_wallet),
+                        creatorSolanaHandle = "sl_${dbToken.symbol.lowercase()}",
+                        slTokenStaked = (dbToken.sol_raised * 1000).toInt(), // Convert SOL to rough staked amount
+                        totalLikesReceived = dbToken.vote_count,
+                        tokensLaunched = 1, // Default to 1 for launched tokens
+                        communityLink = "https://discord.gg/${dbToken.symbol.lowercase()}"
+                    )
+                })
+                
+                android.util.Log.d("MainActivity", "Successfully converted ${tokens.size} active tokens")
+                showToast("📊 Loaded ${tokens.size} active tokens for discovery!")
+                
+                // Refresh the token cards with real data
+                refreshTokenCards()
+                
+            } else {
+                android.util.Log.d("MainActivity", "No tokens found in database, using fallback")
+                loadFallbackTokens()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error loading tokens: ${e.message}")
+            loadFallbackTokens()
+        }
+    }
+    
+    private fun extractUsernameFromWallet(walletAddress: String): String {
+        // Extract a readable username from wallet address
+        return if (walletAddress.length >= 8) {
+            "user_${walletAddress.take(4)}${walletAddress.takeLast(4)}"
+        } else {
+            "user_${walletAddress}"
+        }
+    }
+    
+    private fun loadFallbackTokens() {
+        // Fallback tokens if database is empty
+        tokens.clear()
+        tokens.addAll(listOf(
+            TokenData("1", "MOON Token", "cryptoking", "🚀 Sample token for testing", 1247,
+                     "ABC123...XYZ789", "cryptoking", "sl_moon", 2500, 1247, 8, "https://discord.gg/moontoken")
+        ))
+        refreshTokenCards()
+    }
+    
+    private fun refreshTokenCards() {
+        // Reset and recreate the token cards with new data
+        currentCardIndex = 0
+        setupSwipeCards()
+    }
+    
+    private suspend fun loadPresaleDataFromDatabase() {
+        try {
+            // Get tokens that are in presale status
+            val dbTokens = databaseService.getAllTokens()
+            val presaleDbTokens = dbTokens.filter { it.status == "presale" }
+            
+            if (presaleDbTokens.isNotEmpty()) {
+                android.util.Log.d("MainActivity", "Converting ${presaleDbTokens.size} presale tokens")
+                
+                presaleTokens.clear()
+                presaleTokens.addAll(presaleDbTokens.map { dbToken ->
+                    val currentTime = System.currentTimeMillis()
+                    
+                    PresaleTokenData(
+                        id = "ps${dbToken.token_id}",
+                        name = dbToken.token_name,
+                        symbol = dbToken.symbol,
+                        description = dbToken.description ?: "Presale token - no description available",
+                        totalSupply = 1_000_000_000L, // Default supply
+                        raisedSol = dbToken.sol_raised, // Current SOL raised
+                        startTime = currentTime,
+                        endTime = currentTime + (7 * 24 * 60 * 60 * 1000L), // 7 days from now
+                        creatorAddress = dbToken.creator_wallet,
+                        tokenAddress = dbToken.token_mint_address ?: dbToken.creator_wallet
+                    )
+                })
+                
+                android.util.Log.d("MainActivity", "Successfully loaded ${presaleTokens.size} presale tokens")
+                showToast("🚀 Loaded ${presaleTokens.size} active presales!")
+                
+                // Update the presale adapter
+                refreshPresaleAdapter()
+                
+            } else {
+                android.util.Log.d("MainActivity", "No presale tokens found, loading fallback")
+                loadFallbackPresales()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error loading presale data: ${e.message}")
+            loadFallbackPresales()
+        }
+    }
+    
+    private fun loadFallbackPresales() {
+        presaleTokens.clear()
+        presaleTokens.add(
+            PresaleTokenData("ps1", "Sample Presale", "SAMPLE", "🚀 No presale tokens found in database", 
+                            1_000_000_000L, 25.0, System.currentTimeMillis(), 
+                            System.currentTimeMillis() + (3 * 24 * 60 * 60 * 1000L), 
+                            "SampleCreator", "SampleAddr")
+        )
+        refreshPresaleAdapter()
+    }
+    
+    private fun refreshPresaleAdapter() {
+        // Update the presale RecyclerView adapter with new data
+        runOnUiThread {
+            presaleAdapter = PresaleAdapter(presaleTokens) { token -> 
+                showBuyDialog(token)
+            }
+            presaleRecyclerView.adapter = presaleAdapter
+        }
+    }
+    
+    private suspend fun loadLeaderboardData() {
+        try {
+            val allDbTokens = databaseService.getAllTokens()
+            android.util.Log.d("MainActivity", "Loading leaderboard data from ${allDbTokens.size} tokens")
+            
+            // 1. Token Launched Leaderboard (launched tokens sorted by SOL raised)
+            val launchedTokens = allDbTokens.filter { it.status == "launched" }
+                .sortedByDescending { it.sol_raised }
+                .take(5)
+            
+            tokenLaunchedLeaderboard.clear()
+            tokenLaunchedLeaderboard.addAll(launchedTokens.mapIndexed { index, token ->
+                TokenLaunchedData(
+                    rank = index + 1,
+                    tokenName = token.token_name,
+                    tokenSymbol = token.symbol,
+                    marketCap = token.sol_raised, // SOL raised
+                    marketCapUSD = token.sol_raised * 50, // Mock USD conversion
+                    creator = extractUsernameFromWallet(token.creator_wallet),
+                    launchDate = System.currentTimeMillis()
+                )
+            })
+            
+            // 2. Most Likes Leaderboard (creators sorted by vote count)
+            val creatorVotes = allDbTokens.groupBy { it.creator_wallet }
+                .map { (wallet, tokens) ->
+                    val totalVotes = tokens.sumOf { it.vote_count }
+                    val tokenCount = tokens.size
+                    val avgLikes = if (tokenCount > 0) totalVotes.toDouble() / tokenCount else 0.0
+                    val bestToken = tokens.maxByOrNull { it.vote_count }
+                    
+                    CreatorMostLikesData(
+                        rank = 0, // Will be set after sorting
+                        creatorName = extractUsernameFromWallet(wallet),
+                        twitterHandle = null, // No twitter data available
+                        totalLikes = totalVotes,
+                        totalTokensCreated = tokenCount,
+                        averageLikesPerToken = avgLikes,
+                        topTokenName = bestToken?.token_name ?: "",
+                        topTokenLikes = bestToken?.vote_count ?: 0
+                    )
+                }
+                .sortedByDescending { it.totalLikes }
+                .take(5)
+            
+            creatorMostLikesLeaderboard.clear()
+            creatorMostLikesLeaderboard.addAll(creatorVotes.mapIndexed { index, creator ->
+                creator.copy(rank = index + 1)
+            })
+            
+            // 3. Most Launched Leaderboard (creators by token count)
+            val creatorLaunched = allDbTokens.groupBy { it.creator_wallet }
+                .map { (wallet, tokens) ->
+                    val totalMarketCap = tokens.sumOf { it.sol_raised * 50_000 }
+                    val successRate = tokens.count { it.status == "launched" }.toDouble() / tokens.size
+                    val bestToken = tokens.maxByOrNull { it.sol_raised }
+                    
+                    CreatorMostLaunchedData(
+                        rank = 0, // Will be set after sorting
+                        creatorName = extractUsernameFromWallet(wallet),
+                        twitterHandle = null, // No twitter data available
+                        totalTokensLaunched = tokens.size,
+                        totalMarketCap = totalMarketCap,
+                        successRate = successRate,
+                        bestPerformingToken = bestToken?.token_name ?: "",
+                        bestTokenMarketCap = bestToken?.sol_raised?.times(50_000) ?: 0.0
+                    )
+                }
+                .sortedByDescending { it.totalTokensLaunched }
+                .take(5)
+            
+            creatorMostLaunchedLeaderboard.clear()
+            creatorMostLaunchedLeaderboard.addAll(creatorLaunched.mapIndexed { index, creator ->
+                creator.copy(rank = index + 1)
+            })
+            
+            // 4. SL Staked Leaderboard (mock data for now since we don't have staking records)
+            val users = databaseService.getUsers()
+            slStakedLeaderboard.clear()
+            slStakedLeaderboard.addAll(users.take(5).mapIndexed { index, user ->
+                SLTokenStakedData(
+                    rank = index + 1,
+                    walletAddress = user.wallet_address,
+                    twitterHandle = user.twitter_handle,
+                    solanaDomain = user.solana_name,
+                    stakedAmount = user.sl_token_balance.toDouble(),
+                    stakingDuration = 30L * 24 * 60 * 60 * 1000L, // 30 days default
+                    rewardsEarned = user.sl_token_balance.toDouble() * 0.05 // 5% estimated rewards
+                )
+            })
+            
+            android.util.Log.d("MainActivity", "Loaded leaderboards: ${tokenLaunchedLeaderboard.size} launched, ${creatorMostLikesLeaderboard.size} likes, ${creatorMostLaunchedLeaderboard.size} most launched")
+            showToast("🏆 Loaded real leaderboard data!")
+            
+            // Refresh the leaderboard RecyclerViews
+            refreshLeaderboardAdapters()
+            
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error loading leaderboard data: ${e.message}")
+            loadFallbackLeaderboards()
+        }
+    }
+    
+    private fun loadFallbackLeaderboards() {
+        // Add minimal fallback data if database loading fails
+        tokenLaunchedLeaderboard.clear()
+        creatorMostLikesLeaderboard.clear()
+        creatorMostLaunchedLeaderboard.clear()
+        slStakedLeaderboard.clear()
+        
+        android.util.Log.d("MainActivity", "Using fallback leaderboard data")
+    }
+    
+    private fun refreshLeaderboardAdapters() {
+        runOnUiThread {
+            // Update all leaderboard adapters with new data
+            setupLeaderboardRecyclerViews()
+        }
     }
     
     private fun setupWalletManager() {
