@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#f8f9fa">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp"
+        android:background="#ffffff"
+        android:elevation="2dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🏆 Leaderboard"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#333333" />
+
+    </LinearLayout>
+
+    <!-- Tab Layout -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:background="#ffffff"
+        android:elevation="1dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/tabTokenLaunched"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🚀 Tokens"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#9945FF"
+                android:background="@drawable/tab_background_selected"
+                android:padding="10dp"
+                android:layout_marginEnd="6dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:minWidth="70dp"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/tabSLStaked"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="💎 Staked"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:background="@drawable/tab_background_unselected"
+                android:padding="10dp"
+                android:layout_marginEnd="6dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:minWidth="70dp"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/tabMostLikes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="❤️ Likes"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:background="@drawable/tab_background_unselected"
+                android:padding="10dp"
+                android:layout_marginEnd="6dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:minWidth="70dp"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/tabMostLaunched"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔥 Active"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:background="@drawable/tab_background_unselected"
+                android:padding="10dp"
+                android:layout_marginEnd="6dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:minWidth="70dp"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
+    <!-- Content Container -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- Token Launched Leaderboard -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/tokenLaunchedRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:visibility="visible" />
+
+        <!-- SL Staked Leaderboard -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/slStakedRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:visibility="gone" />
+
+        <!-- Most Likes Leaderboard -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/mostLikesRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:visibility="gone" />
+
+        <!-- Most Launched Leaderboard -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/mostLaunchedRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+</LinearLayout>

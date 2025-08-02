@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp">
+
+        <!-- Rank Badge -->
+        <TextView
+            android:id="@+id/rankBadge"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:text="1"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#ffffff"
+            android:background="@drawable/rank_badge_background"
+            android:gravity="center"
+            android:layout_marginEnd="12dp" />
+
+        <!-- Creator Avatar -->
+        <View
+            android:id="@+id/creatorAvatar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="#9945FF"
+            android:layout_marginEnd="12dp" />
+
+        <!-- Creator Info -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/creatorName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@cryptoking"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#333333" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
+
+                <TextView
+                    android:id="@+id/primaryMetric"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1.2M likes"
+                    android:textSize="12sp"
+                    android:textColor="#4CAF50"
+                    android:background="#4CAF5020"
+                    android:padding="4dp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:id="@+id/secondaryMetric"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="15 tokens"
+                    android:textSize="12sp"
+                    android:textColor="#666666" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Stats -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="end">
+
+            <TextView
+                android:id="@+id/mainStat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1.2M"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#9945FF" />
+
+            <TextView
+                android:id="@+id/subStat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="avg 80K/token"
+                android:textSize="12sp"
+                android:textColor="#666666" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
