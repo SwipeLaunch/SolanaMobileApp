@@ -72,11 +72,22 @@ class MainActivity : AppCompatActivity() {
     
     // Activity page views
     private lateinit var activityPage: View
-    private lateinit var activityFeedRecyclerView: RecyclerView
+    private lateinit var votersRecyclerView: RecyclerView
+    private lateinit var followingSection: LinearLayout
+    private lateinit var followingRecyclerView: RecyclerView
     private lateinit var emptyStateLayout: LinearLayout
     private lateinit var exploreCreatorsButton: Button
     private lateinit var leaderboardButton: Button
-    private lateinit var activityFeedAdapter: ActivityFeedAdapter
+    private lateinit var voterAdapter: VoterAdapter
+    private lateinit var followingActivityAdapter: ActivityFeedAdapter
+    
+    // Featured address views
+    private lateinit var featuredAddressCard: androidx.cardview.widget.CardView
+    private lateinit var featuredUserAvatar: View
+    private lateinit var featuredUserName: TextView
+    private lateinit var featuredUserWallet: TextView
+    private lateinit var featuredUserStats: TextView
+    private lateinit var followFeaturedButton: Button
     
     // Create Token page views
     private lateinit var createTokenPage: View
@@ -142,8 +153,10 @@ class MainActivity : AppCompatActivity() {
     private var creatorMostLikesLeaderboard = mutableListOf<CreatorMostLikesData>()
     private var creatorMostLaunchedLeaderboard = mutableListOf<CreatorMostLaunchedData>()
     
-    // Activity feed data - loaded from database
-    private var activityFeedData = mutableListOf<ActivityFeedData>()
+    // Activity data - loaded from database
+    private var votersData = mutableListOf<VoterData>()
+    private var followingActivityData = mutableListOf<ActivityFeedData>()
+    private var followedUsers = mutableSetOf<String>() // Track followed user wallet addresses
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -154,6 +167,9 @@ class MainActivity : AppCompatActivity() {
         setupWalletManager()
         setupBottomNavigation()
         setupSwipeCards()
+        
+        // Load data that requires database after database setup
+        loadActivityPageData()
     }
     
     private fun initViews() {
@@ -224,10 +240,20 @@ class MainActivity : AppCompatActivity() {
         
         // Initialize activity page views
         activityPage = findViewById(R.id.activityPage)
-        activityFeedRecyclerView = activityPage.findViewById(R.id.activityFeedRecyclerView)
+        votersRecyclerView = activityPage.findViewById(R.id.votersRecyclerView)
+        followingSection = activityPage.findViewById(R.id.followingSection)
+        followingRecyclerView = activityPage.findViewById(R.id.followingRecyclerView)
         emptyStateLayout = activityPage.findViewById<LinearLayout>(R.id.emptyStateLayout)
         exploreCreatorsButton = activityPage.findViewById(R.id.exploreCreatorsButton)
         leaderboardButton = activityPage.findViewById(R.id.leaderboardButton)
+        
+        // Initialize featured address views
+        featuredAddressCard = activityPage.findViewById(R.id.featuredAddressCard)
+        featuredUserAvatar = activityPage.findViewById(R.id.featuredUserAvatar)
+        featuredUserName = activityPage.findViewById(R.id.featuredUserName)
+        featuredUserWallet = activityPage.findViewById(R.id.featuredUserWallet)
+        featuredUserStats = activityPage.findViewById(R.id.featuredUserStats)
+        followFeaturedButton = activityPage.findViewById(R.id.followFeaturedButton)
         
         // Initialize create token page views
         createTokenPage = findViewById(R.id.createTokenPage)
@@ -622,8 +648,16 @@ class MainActivity : AppCompatActivity() {
             
             override fun onTransactionComplete(signature: String) {
                 showToast("Transaction complete: ${signature.take(8)}...")
-                // Update SOL balance after transaction (simulate)
-                profileSolBalance.text = "1.00 SOL"
+                // Update SOL balance after transaction from database
+                val walletAddress = walletManager.getConnectedPublicKey()
+                if (walletAddress != null) {
+                    lifecycleScope.launch {
+                        val solBalance = databaseService.getUserSolBalance(walletAddress)
+                        runOnUiThread {
+                            profileSolBalance.text = "${String.format("%.2f", solBalance)} SOL"
+                        }
+                    }
+                }
             }
         })
         
@@ -658,6 +692,11 @@ class MainActivity : AppCompatActivity() {
                 clipboard.setPrimaryClip(clip)
                 showToast("Address copied to clipboard")
             }
+        }
+        
+        // Setup likes count click listener
+        profileLikesCount.setOnClickListener {
+            showUserLikesDialog()
         }
     }
     
@@ -840,7 +879,14 @@ class MainActivity : AppCompatActivity() {
             
             // Update profile info
             profileWalletAddress.text = displayAddress
-            profileSolBalance.text = "0.00 SOL"
+            
+            // Load SOL balance from database
+            lifecycleScope.launch {
+                val solBalance = databaseService.getUserSolBalance(fullAddress)
+                runOnUiThread {
+                    profileSolBalance.text = "${String.format("%.2f", solBalance)} SOL"
+                }
+            }
             
             // Update activity summary with real data
             updateActivitySummary(fullAddress)
@@ -871,16 +917,30 @@ class MainActivity : AppCompatActivity() {
         }
         
         val tokensPerSol = token.getTokensPerSol()
+        val dialogView = createBuyDialogView(token)
         val dialog = AlertDialog.Builder(this)
             .setTitle("Buy ${token.symbol}")
             .setMessage("Purchase ${token.name} tokens\n\n" +
                        "Rate: 1 SOL = ${String.format("%.0f", tokensPerSol)} ${token.symbol}\n" +
                        "Target: 100 SOL (${token.getProgressPercentage()}% complete)\n\n" +
                        "How much SOL do you want to spend?")
-            .setView(createBuyDialogView(token))
+            .setView(dialogView)
             .setPositiveButton("Confirm Purchase") { _, _ ->
-                // In real implementation, this would create and sign a transaction
-                processPurchase(token, 1.0) // Mock 1 SOL purchase
+                val amountInput = dialogView.tag as EditText
+                val solAmountText = amountInput.text.toString()
+                val solAmount = solAmountText.toDoubleOrNull() ?: 0.0
+                
+                if (solAmount < 0.1) {
+                    showToast("Minimum purchase is 0.1 SOL")
+                    return@setPositiveButton
+                }
+                
+                if (solAmount > 10.0) {
+                    showToast("Maximum purchase is 10 SOL per transaction")
+                    return@setPositiveButton
+                }
+                
+                processPurchase(token, solAmount)
             }
             .setNegativeButton("Cancel", null)
             .create()
@@ -889,9 +949,32 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun createBuyDialogView(token: PresaleTokenData): View {
-        val view = layoutInflater.inflate(android.R.layout.simple_list_item_1, null)
-        // For simplicity, using basic view - in real app, create custom dialog layout
-        return view
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(50, 30, 50, 30)
+        }
+        
+        val amountInput = EditText(this).apply {
+            hint = "Enter SOL amount (e.g. 0.5)"
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+            setText("1.0")
+            textSize = 16f
+        }
+        
+        val infoText = TextView(this).apply {
+            text = "Minimum: 0.1 SOL\nYou will receive: ${String.format("%.0f", token.getTokensPerSol())} ${token.symbol} per SOL"
+            textSize = 14f
+            setTextColor(getColor(android.R.color.darker_gray))
+            setPadding(0, 20, 0, 0)
+        }
+        
+        layout.addView(amountInput)
+        layout.addView(infoText)
+        
+        // Store the input reference for later use
+        layout.tag = amountInput
+        
+        return layout
     }
     
     private fun processPurchase(token: PresaleTokenData, solAmount: Double) {
@@ -901,16 +984,148 @@ class MainActivity : AppCompatActivity() {
         }
         
         lifecycleScope.launch {
-            showToast("Processing transaction...")
-            
-            // Simulate transaction processing
-            kotlinx.coroutines.delay(2000)
-            
-            val tokensReceived = token.getTokensPerSol() * solAmount
-            showToast("✅ Purchase successful!\nReceived ${String.format("%.0f", tokensReceived)} ${token.symbol}")
-            
-            // In real app, update token progress and user's balance
+            try {
+                showToast("Processing transaction...")
+                
+                // Simulate transaction processing
+                kotlinx.coroutines.delay(2000)
+                
+                val walletAddress = walletManager.getConnectedPublicKey()
+                if (walletAddress != null) {
+                    // Convert token ID to Int safely
+                    val tokenIdInt = try {
+                        token.id.toInt()
+                    } catch (e: NumberFormatException) {
+                        android.util.Log.e("MainActivity", "Invalid token ID: ${token.id}")
+                        showToast("❌ Invalid token ID")
+                        return@launch
+                    }
+                    
+                    // Add presale participant to database
+                    val participantSuccess = databaseService.addPresaleParticipant(tokenIdInt, walletAddress, solAmount)
+                    android.util.Log.d("MainActivity", "Participant added: $participantSuccess")
+                    
+                    // Update token's sol_raised amount in database
+                    val success = databaseService.updateTokenSolRaised(tokenIdInt, solAmount)
+                    android.util.Log.d("MainActivity", "Sol raised updated: $success")
+                    
+                    if (success) {
+                        val tokensReceived = token.getTokensPerSol() * solAmount
+                        showToast("✅ Purchase successful!\nReceived ${String.format("%.0f", tokensReceived)} ${token.symbol}\nSpent ${String.format("%.2f", solAmount)} SOL")
+                        
+                        // Refresh presale data to show updated progress
+                        loadPresaleDataFromDatabase()
+                    } else {
+                        showToast("⚠️ Transaction completed but database update failed")
+                    }
+                } else {
+                    showToast("❌ Error: Wallet address not found")
+                }
+                
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error processing purchase: ${e.message}")
+                showToast("❌ Purchase failed: ${e.message}")
+            }
         }
+    }
+    
+    private fun showUserLikesDialog() {
+        if (!walletManager.isWalletConnected()) {
+            showToast("Please connect your wallet to view your likes")
+            return
+        }
+        
+        lifecycleScope.launch {
+            try {
+                val walletAddress = walletManager.getConnectedPublicKey()
+                if (walletAddress == null) {
+                    showToast("Wallet not properly connected")
+                    return@launch
+                }
+                
+                // Get user's votes from database
+                val userVotes = databaseService.getUserVotes().filter { it.user_wallet == walletAddress }
+                val allTokens = databaseService.getAllTokens()
+                
+                android.util.Log.d("MainActivity", "User votes for $walletAddress: ${userVotes.size}")
+                android.util.Log.d("MainActivity", "All tokens: ${allTokens.size}")
+                
+                // Create list of liked tokens with details
+                val likedTokens = userVotes.mapNotNull { vote ->
+                    allTokens.find { it.token_id == vote.token_id }?.let { token ->
+                        LikedTokenInfo(
+                            id = token.token_id ?: 0,
+                            name = token.token_name,
+                            symbol = token.symbol,
+                            status = token.status,
+                            description = token.description,
+                            creator = token.creator_wallet
+                        )
+                    }
+                }
+                
+                android.util.Log.d("MainActivity", "Liked tokens found: ${likedTokens.size}")
+                
+                runOnUiThread {
+                    showLikesDialog(likedTokens)
+                }
+                
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error loading user likes: ${e.message}")
+                runOnUiThread {
+                    showToast("Error loading your likes")
+                }
+            }
+        }
+    }
+    
+    private fun showLikesDialog(likedTokens: List<LikedTokenInfo>) {
+        val dialogView = layoutInflater.inflate(R.layout.likes_dialog, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        
+        val dialogTitle = dialogView.findViewById<TextView>(R.id.dialogTitle)
+        val likesRecyclerView = dialogView.findViewById<RecyclerView>(R.id.likesRecyclerView)
+        val emptyState = dialogView.findViewById<LinearLayout>(R.id.emptyState)
+        
+        if (likedTokens.isEmpty()) {
+            likesRecyclerView.visibility = View.GONE
+            emptyState.visibility = View.VISIBLE
+            dialogTitle.text = "Your Likes"
+        } else {
+            likesRecyclerView.visibility = View.VISIBLE
+            emptyState.visibility = View.GONE
+            dialogTitle.text = "Your Likes (${likedTokens.size})"
+            
+            val adapter = LikedTokenAdapter(likedTokens) { token ->
+                dialog.dismiss()
+                showTokenInfoDialog(token)
+            }
+            
+            likesRecyclerView.layoutManager = LinearLayoutManager(this)
+            likesRecyclerView.adapter = adapter
+        }
+        
+        dialog.show()
+    }
+    
+    private fun showTokenInfoDialog(token: LikedTokenInfo) {
+        val message = "🪙 Token: ${token.name} (${token.symbol})\n\n" +
+                     "📊 Status: ${token.status.uppercase()}\n\n" +
+                     "👤 Creator: ${formatWalletForDisplay(token.creator)}\n\n" +
+                     "${token.description ?: "No description available"}"
+        
+        AlertDialog.Builder(this)
+            .setTitle("Token Details")
+            .setMessage(message)
+            .setPositiveButton("Close", null)
+            .setNeutralButton("View in Discover") { _, _ ->
+                bottomNavigation.selectedItemId = R.id.nav_discover
+                showToast("Navigate to ${token.name} in discover tab")
+            }
+            .create()
+            .show()
     }
     
     private fun showLeaderboardTab() {
@@ -993,9 +1208,36 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun setupActivityPage() {
-        // Setup activity feed adapter
-        activityFeedAdapter = ActivityFeedAdapter(
-            activityFeedData,
+        // Setup voters adapter
+        voterAdapter = VoterAdapter(votersData) { voter, position ->
+            // Handle follow/unfollow
+            val updatedVoter = voter.copy(isFollowed = !voter.isFollowed)
+            votersData[position] = updatedVoter
+            voterAdapter.notifyItemChanged(position)
+            
+            if (updatedVoter.isFollowed) {
+                followedUsers.add(voter.walletAddress)
+                android.util.Log.d("MainActivity", "Added to followed users: ${voter.walletAddress}")
+                showToast("✅ Now following ${formatWalletForDisplay(voter.walletAddress)}")
+            } else {
+                followedUsers.remove(voter.walletAddress)
+                android.util.Log.d("MainActivity", "Removed from followed users: ${voter.walletAddress}")
+                showToast("❌ Unfollowed ${formatWalletForDisplay(voter.walletAddress)}")
+            }
+            
+            android.util.Log.d("MainActivity", "Total followed users now: ${followedUsers.size}")
+            
+            // Update following activities and count
+            loadFollowingActivities()
+            updateFollowingCountFromActivities()
+        }
+        
+        votersRecyclerView.layoutManager = LinearLayoutManager(this)
+        votersRecyclerView.adapter = voterAdapter
+        
+        // Setup following activities adapter
+        followingActivityAdapter = ActivityFeedAdapter(
+            followingActivityData,
             onViewTokenClick = { activity ->
                 showTokenDetailPopup(activity)
             },
@@ -1004,13 +1246,12 @@ class MainActivity : AppCompatActivity() {
             }
         )
         
-        activityFeedRecyclerView.layoutManager = LinearLayoutManager(this)
-        activityFeedRecyclerView.adapter = activityFeedAdapter
+        followingRecyclerView.layoutManager = LinearLayoutManager(this)
+        followingRecyclerView.adapter = followingActivityAdapter
         
         // Setup explore creators button
         exploreCreatorsButton.setOnClickListener {
             showToast("Navigate to creator discovery (placeholder)")
-            // In real app, this would navigate to discover tab or creator list
             bottomNavigation.selectedItemId = R.id.nav_discover
         }
         
@@ -1019,39 +1260,84 @@ class MainActivity : AppCompatActivity() {
             showLeaderboardOverlay()
         }
         
-        // Load real activity data from database
-        loadActivityData()
+        // Initially hide following section and show empty state if no follows
+        followingSection.visibility = View.GONE
+        emptyStateLayout.visibility = if (followedUsers.isEmpty()) View.VISIBLE else View.GONE
+        featuredAddressCard.visibility = View.GONE
     }
     
-    private fun updateActivityStats() {
-        // Count likes and presales from activity data (mock implementation)
-        val likesCount = activityFeedData.count { it.activityType == ActivityType.LIKE }
-        val presalesCount = activityFeedData.count { it.activityType == ActivityType.PRESALE }
-        val followingCount = 8 // Mock following count
+    private fun loadActivityPageData() {
+        // Setup featured address section
+        setupFeaturedAddress()
         
-        // Activity summary has been moved to Profile page
-        // Update profile activity summary instead if needed
+        // Load voters data from database
+        loadVotersData()
     }
     
-    private fun loadActivityData() {
+    private fun loadVotersData() {
         lifecycleScope.launch {
             try {
-                android.util.Log.d("MainActivity", "Loading activity data from database...")
+                android.util.Log.d("MainActivity", "Loading voters data from database...")
                 
                 // Clear existing data
-                activityFeedData.clear()
+                votersData.clear()
                 
-                // Load tokens to get token information
-                val allTokens = databaseService.getAllTokens()
-                android.util.Log.d("MainActivity", "Loaded ${allTokens.size} tokens")
-                
-                // Load user votes to create like activities
+                // Load user votes to get who voted
                 val votes = databaseService.getUserVotes()
                 android.util.Log.d("MainActivity", "Loaded ${votes.size} votes")
                 
-                // Load presale participants to create presale activities
-                val participants = databaseService.getPresaleParticipants()
-                android.util.Log.d("MainActivity", "Loaded ${participants.size} presale participants")
+                // Group votes by user to count how many tokens each user voted on
+                val voterStats = votes.groupBy { it.user_wallet }
+                    .map { (wallet, userVotes) ->
+                        val isFollowed = followedUsers.contains(wallet)
+                        android.util.Log.d("MainActivity", "Voter $wallet - followed: $isFollowed")
+                        VoterData(
+                            walletAddress = wallet,
+                            tokensVoted = userVotes.size,
+                            isFollowed = isFollowed
+                        )
+                    }
+                    .sortedByDescending { it.tokensVoted } // Sort by most active voters
+                
+                android.util.Log.d("MainActivity", "Voters with followed status: ${voterStats.map { "${it.walletAddress.take(8)} -> ${it.isFollowed}" }}")
+                
+                votersData.addAll(voterStats)
+                
+                android.util.Log.d("MainActivity", "Created ${votersData.size} voter entries")
+                
+                // Update UI on main thread
+                runOnUiThread {
+                    voterAdapter.notifyDataSetChanged()
+                }
+                
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error loading voters data: ${e.message}")
+                android.util.Log.e("MainActivity", "Error details: ${e.stackTraceToString()}")
+            }
+        }
+    }
+    
+    private fun loadFollowingActivities() {
+        lifecycleScope.launch {
+            try {
+                android.util.Log.d("MainActivity", "Loading following activities...")
+                android.util.Log.d("MainActivity", "Currently followed users: ${followedUsers.size} - ${followedUsers.joinToString()}")
+                
+                // Clear existing data
+                followingActivityData.clear()
+                
+                if (followedUsers.isEmpty()) {
+                    android.util.Log.d("MainActivity", "No followed users, hiding following section")
+                    runOnUiThread {
+                        followingSection.visibility = View.GONE
+                    }
+                    return@launch
+                }
+                
+                // Load tokens and votes for followed users only
+                val allTokens = databaseService.getAllTokens()
+                val votes = databaseService.getUserVotes()
+                    .filter { followedUsers.contains(it.user_wallet) }
                 
                 // Convert votes to activity data
                 votes.forEach { vote ->
@@ -1064,74 +1350,54 @@ class MainActivity : AppCompatActivity() {
                             userAvatar = formatWalletForDisplay(vote.user_wallet).take(2).uppercase(),
                             activityType = ActivityType.LIKE,
                             description = "liked ${token.token_name}",
-                            timestamp = System.currentTimeMillis() - (Math.random() * 7200000).toLong(), // Random time within last 2 hours
+                            timestamp = System.currentTimeMillis() - (Math.random() * 7200000).toLong(),
                             tokenInfo = TokenActivityInfo(
                                 tokenName = token.token_name,
                                 tokenCreator = formatWalletForDisplay(token.creator_wallet),
-                                tokenPrice = "${token.launch_price_sol ?: 0.05} SOL"
+                                tokenPrice = when (token.status) {
+                                    "launched" -> "${String.format("%.2f", token.launch_price_sol ?: 0.05)} SOL"
+                                    "presale" -> "${String.format("%.2f", token.launch_price_sol ?: 0.03)} SOL"
+                                    else -> "Not launched yet"
+                                }
                             )
                         )
-                        activityFeedData.add(activityData)
-                    }
-                }
-                
-                // Convert presale participants to activity data
-                participants.forEach { participant ->
-                    val token = allTokens.find { it.token_id == participant.token_id }
-                    if (token != null) {
-                        val activityData = ActivityFeedData(
-                            id = "presale_${participant.user_wallet}_${participant.token_id}",
-                            userId = participant.user_wallet,
-                            userName = formatWalletForDisplay(participant.user_wallet),
-                            userAvatar = formatWalletForDisplay(participant.user_wallet).take(2).uppercase(),
-                            activityType = ActivityType.PRESALE,
-                            description = "joined ${token.token_name} presale",
-                            timestamp = System.currentTimeMillis() - (Math.random() * 7200000).toLong(), // Random time within last 2 hours
-                            tokenInfo = TokenActivityInfo(
-                                tokenName = token.token_name,
-                                tokenCreator = formatWalletForDisplay(token.creator_wallet),
-                                tokenPrice = "${token.launch_price_sol ?: 0.05} SOL"
-                            )
-                        )
-                        activityFeedData.add(activityData)
+                        followingActivityData.add(activityData)
                     }
                 }
                 
                 // Sort by timestamp (most recent first)
-                activityFeedData.sortByDescending { it.timestamp }
+                followingActivityData.sortByDescending { it.timestamp }
                 
-                android.util.Log.d("MainActivity", "Created ${activityFeedData.size} activity items")
+                android.util.Log.d("MainActivity", "Created ${followingActivityData.size} following activities")
                 
                 // Update UI on main thread
                 runOnUiThread {
-                    activityFeedAdapter.notifyDataSetChanged()
+                    followingActivityAdapter.notifyDataSetChanged()
                     
-                    // Update Following count in profile to show activity count
-                    updateFollowingCountFromActivities()
-                    
-                    // Show/hide empty state based on data
-                    if (activityFeedData.isNotEmpty()) {
+                    // Show/hide following section and empty state properly
+                    if (followingActivityData.isNotEmpty()) {
+                        followingSection.visibility = View.VISIBLE
                         emptyStateLayout.visibility = View.GONE
-                        activityFeedRecyclerView.visibility = View.VISIBLE
+                        android.util.Log.d("MainActivity", "Showing following section with ${followingActivityData.size} activities")
                     } else {
-                        emptyStateLayout.visibility = View.VISIBLE
-                        activityFeedRecyclerView.visibility = View.GONE
+                        followingSection.visibility = View.GONE
+                        // Only show empty state if we have followed users but no activities
+                        if (followedUsers.isNotEmpty()) {
+                            emptyStateLayout.visibility = View.VISIBLE
+                            android.util.Log.d("MainActivity", "Showing empty state - followed users but no activities")
+                        } else {
+                            emptyStateLayout.visibility = View.VISIBLE
+                            android.util.Log.d("MainActivity", "Showing empty state - no followed users")
+                        }
                     }
                 }
                 
             } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "Error loading activity data: ${e.message}")
-                android.util.Log.e("MainActivity", "Error details: ${e.stackTraceToString()}")
-                
-                runOnUiThread {
-                    // Show empty state on error
-                    emptyStateLayout.visibility = View.VISIBLE
-                    activityFeedRecyclerView.visibility = View.GONE
-                    showToast("Error loading activity data")
-                }
+                android.util.Log.e("MainActivity", "Error loading following activities: ${e.message}")
             }
         }
     }
+    
     
     private fun formatWalletForDisplay(walletAddress: String): String {
         return if (walletAddress.length >= 8) {
@@ -1142,11 +1408,162 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun updateFollowingCountFromActivities() {
-        // Update the Following count in profile page to show number of activities
+        // Update the Following count in profile page to show number of followed users
         try {
-            profileFollowingCount.text = activityFeedData.size.toString()
+            profileFollowingCount.text = followedUsers.size.toString()
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "Error updating following count: ${e.message}")
+        }
+    }
+    
+    private fun setupFeaturedAddress() {
+        lifecycleScope.launch {
+            try {
+                android.util.Log.d("MainActivity", "Setting up featured address...")
+                
+                // Get users from database to find a featured user
+                val users = databaseService.getUsers()
+                val tokens = databaseService.getAllTokens()
+                val votes = databaseService.getUserVotes()
+                
+                android.util.Log.d("MainActivity", "Found ${users.size} users, ${tokens.size} tokens, ${votes.size} votes")
+                
+                if (users.isNotEmpty()) {
+                    // Find user with most activity (tokens created + votes)
+                    val userStats = users.map { user ->
+                        val tokenCount = tokens.count { it.creator_wallet == user.wallet_address }
+                        val voteCount = votes.count { it.user_wallet == user.wallet_address }
+                        val totalActivity = tokenCount + voteCount
+                        Triple(user, tokenCount, totalActivity)
+                    }.sortedByDescending { it.third }
+                    
+                    val (featuredUser, tokenCount, _) = userStats.first()
+                    val userVotes = votes.count { it.user_wallet == featuredUser.wallet_address }
+                    
+                    android.util.Log.d("MainActivity", "Featured user: ${featuredUser.wallet_address}, tokens: $tokenCount, votes: $userVotes")
+                    
+                    runOnUiThread {
+                        // Display featured user info
+                        featuredUserName.text = featuredUser.solana_name ?: formatWalletForDisplay(featuredUser.wallet_address)
+                        featuredUserWallet.text = formatWalletForDisplay(featuredUser.wallet_address)
+                        featuredUserStats.text = "🚀 $tokenCount tokens launched • ❤️ $userVotes likes"
+                        
+                        // Generate avatar color based on wallet address
+                        val colors = listOf("#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#FDA7DF")
+                        val colorIndex = featuredUser.wallet_address.hashCode() % colors.size
+                        featuredUserAvatar.setBackgroundColor(android.graphics.Color.parseColor(colors[kotlin.math.abs(colorIndex)]))
+                        
+                        // Setup follow button
+                        var isFollowing = followedUsers.contains(featuredUser.wallet_address)
+                        followFeaturedButton.text = if (isFollowing) "Following" else "Follow"
+                        followFeaturedButton.setBackgroundResource(if (isFollowing) R.drawable.follow_button_following else R.drawable.follow_button_background)
+                        followFeaturedButton.setTextColor(android.graphics.Color.parseColor(if (isFollowing) "#4CAF50" else "#9945FF"))
+                        
+                        followFeaturedButton.setOnClickListener {
+                            isFollowing = !isFollowing
+                            if (isFollowing) {
+                                followedUsers.add(featuredUser.wallet_address)
+                                followFeaturedButton.text = "Following"
+                                followFeaturedButton.setBackgroundResource(R.drawable.follow_button_following)
+                                followFeaturedButton.setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+                                showToast("✅ Now following ${featuredUserName.text}")
+                            } else {
+                                followedUsers.remove(featuredUser.wallet_address)
+                                followFeaturedButton.text = "Follow"
+                                followFeaturedButton.setBackgroundResource(R.drawable.follow_button_background)
+                                followFeaturedButton.setTextColor(android.graphics.Color.parseColor("#9945FF"))
+                                showToast("❌ Unfollowed ${featuredUserName.text}")
+                            }
+                            // Refresh the following activities
+                            loadFollowingActivities()
+                            updateFollowingCountFromActivities()
+                        }
+                        
+                        // Show the featured address card
+                        featuredAddressCard.visibility = View.VISIBLE
+                        android.util.Log.d("MainActivity", "Featured address card shown")
+                    }
+                } else {
+                    android.util.Log.d("MainActivity", "No users found, showing default featured address")
+                    // Show a default featured address when no users are found
+                    runOnUiThread {
+                        featuredUserName.text = "SwipeLaunch Team"
+                        featuredUserWallet.text = "umuA...mNu"
+                        featuredUserStats.text = "🚀 Official account • ⭐ Featured creator"
+                        featuredUserAvatar.setBackgroundColor(android.graphics.Color.parseColor("#9945FF"))
+                        
+                        // Setup follow button
+                        val defaultWallet = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu"
+                        var isFollowing = followedUsers.contains(defaultWallet)
+                        followFeaturedButton.text = if (isFollowing) "Following" else "Follow"
+                        followFeaturedButton.setBackgroundResource(if (isFollowing) R.drawable.follow_button_following else R.drawable.follow_button_background)
+                        followFeaturedButton.setTextColor(android.graphics.Color.parseColor(if (isFollowing) "#4CAF50" else "#9945FF"))
+                        
+                        followFeaturedButton.setOnClickListener {
+                            isFollowing = !isFollowing
+                            if (isFollowing) {
+                                followedUsers.add(defaultWallet)
+                                followFeaturedButton.text = "Following"
+                                followFeaturedButton.setBackgroundResource(R.drawable.follow_button_following)
+                                followFeaturedButton.setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+                                showToast("✅ Now following SwipeLaunch Team")
+                            } else {
+                                followedUsers.remove(defaultWallet)
+                                followFeaturedButton.text = "Follow"
+                                followFeaturedButton.setBackgroundResource(R.drawable.follow_button_background)
+                                followFeaturedButton.setTextColor(android.graphics.Color.parseColor("#9945FF"))
+                                showToast("❌ Unfollowed SwipeLaunch Team")
+                            }
+                            // Refresh the following activities
+                            loadFollowingActivities()
+                            updateFollowingCountFromActivities()
+                        }
+                        
+                        featuredAddressCard.visibility = View.VISIBLE
+                        android.util.Log.d("MainActivity", "Default featured address card shown")
+                    }
+                }
+                
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error setting up featured address: ${e.message}")
+                android.util.Log.e("MainActivity", "Error details: ${e.stackTraceToString()}")
+                
+                // Show default even on error
+                runOnUiThread {
+                    featuredUserName.text = "SwipeLaunch Team"
+                    featuredUserWallet.text = "umuA...mNu"
+                    featuredUserStats.text = "🚀 Official account • ⭐ Featured creator"
+                    featuredUserAvatar.setBackgroundColor(android.graphics.Color.parseColor("#9945FF"))
+                    
+                    val defaultWallet = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu"
+                    var isFollowing = followedUsers.contains(defaultWallet)
+                    followFeaturedButton.text = if (isFollowing) "Following" else "Follow"
+                    followFeaturedButton.setBackgroundColor(android.graphics.Color.parseColor(if (isFollowing) "#4CAF50" else "#9945FF"))
+                    
+                    followFeaturedButton.setOnClickListener {
+                        isFollowing = !isFollowing
+                        if (isFollowing) {
+                            followedUsers.add(defaultWallet)
+                            followFeaturedButton.text = "Following"
+                            followFeaturedButton.setBackgroundResource(R.drawable.follow_button_following)
+                            followFeaturedButton.setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+                            showToast("✅ Now following SwipeLaunch Team")
+                        } else {
+                            followedUsers.remove(defaultWallet)
+                            followFeaturedButton.text = "Follow"
+                            followFeaturedButton.setBackgroundResource(R.drawable.follow_button_background)
+                            followFeaturedButton.setTextColor(android.graphics.Color.parseColor("#9945FF"))
+                            showToast("❌ Unfollowed SwipeLaunch Team")
+                        }
+                        // Refresh the following activities
+                        loadFollowingActivities()
+                            updateFollowingCountFromActivities()
+                    }
+                    
+                    featuredAddressCard.visibility = View.VISIBLE
+                    android.util.Log.d("MainActivity", "Error fallback featured address card shown")
+                }
+            }
         }
     }
     

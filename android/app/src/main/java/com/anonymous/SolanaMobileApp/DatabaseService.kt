@@ -30,6 +30,7 @@ data class UserRecord(
     val wallet_address: String,
     val twitter_handle: String? = null,
     val solana_name: String? = null,
+    val sol_balance: Double = 1.0, // SOL balance for the user
     val sl_token_balance: Long = 0,
     val daily_voting_rights_remaining: Int = 0,
     val daily_voting_rights_total: Int = 0,
@@ -229,6 +230,84 @@ class DatabaseService {
             } catch (e: Exception) {
                 android.util.Log.e("DatabaseService", "Error getting presale tokens: ${e.message}")
                 emptyList()
+            }
+        }
+    }
+    
+    suspend fun addPresaleParticipant(tokenId: Int, walletAddress: String, solAmount: Double): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                android.util.Log.d("DatabaseService", "Adding presale participant: tokenId=$tokenId, wallet=$walletAddress, amount=$solAmount")
+                
+                val participantRecord = PresaleParticipantRecord(
+                    token_id = tokenId,
+                    user_wallet = walletAddress,
+                    sol_contributed = solAmount
+                )
+                
+                supabase.from("presale_participants")
+                    .insert(participantRecord)
+                
+                android.util.Log.d("DatabaseService", "Successfully added presale participant")
+                true
+            } catch (e: Exception) {
+                android.util.Log.e("DatabaseService", "Error adding presale participant: ${e.message}")
+                false
+            }
+        }
+    }
+    
+    suspend fun updateTokenSolRaised(tokenId: Int, additionalSol: Double): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                android.util.Log.d("DatabaseService", "Updating sol_raised for token $tokenId by +$additionalSol")
+                
+                // First get current sol_raised amount
+                val currentToken = supabase.from("tokens")
+                    .select()
+                    .decodeList<TokenRecord>()
+                    .find { it.token_id == tokenId }
+                
+                if (currentToken != null) {
+                    val newSolRaised = (currentToken.sol_raised ?: 0.0) + additionalSol
+                    
+                    // Update the token
+                    supabase.from("tokens")
+                        .update(mapOf("sol_raised" to newSolRaised)) {
+                            filter {
+                                eq("token_id", tokenId)
+                            }
+                        }
+                    
+                    android.util.Log.d("DatabaseService", "Successfully updated sol_raised from ${currentToken.sol_raised} to $newSolRaised")
+                    true
+                } else {
+                    android.util.Log.e("DatabaseService", "Token with id $tokenId not found")
+                    false
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("DatabaseService", "Error updating sol_raised: ${e.message}")
+                false
+            }
+        }
+    }
+    
+    suspend fun getUserSolBalance(walletAddress: String): Double {
+        return withContext(Dispatchers.IO) {
+            try {
+                android.util.Log.d("DatabaseService", "Getting SOL balance for wallet: $walletAddress")
+                
+                val user = supabase.from("users")
+                    .select()
+                    .decodeList<UserRecord>()
+                    .find { it.wallet_address == walletAddress }
+                
+                val balance = user?.sol_balance ?: 1.0 // Default to 1.0 SOL if user not found
+                android.util.Log.d("DatabaseService", "SOL balance for $walletAddress: $balance")
+                balance
+            } catch (e: Exception) {
+                android.util.Log.e("DatabaseService", "Error getting SOL balance: ${e.message}")
+                1.0 // Default balance on error
             }
         }
     }

@@ -107,6 +107,13 @@ class SwipeableTokenCard @JvmOverloads constructor(
         dislikeButton.setOnClickListener { dislikeAction() }
         infoButton.setOnClickListener { flipCard() }
         backButton.setOnClickListener { flipCard() }
+        
+        // Allow clicking anywhere on the back card to flip back to front
+        backCard.setOnClickListener { 
+            if (isFlipped) {
+                flipCard()
+            }
+        }
 
         // Set up gesture detector
         gestureDetector = GestureDetector(context, SwipeGestureListener())

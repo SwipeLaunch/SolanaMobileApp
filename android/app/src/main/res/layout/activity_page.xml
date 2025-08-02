@@ -48,24 +48,146 @@
 
         </LinearLayout>
 
-
-        <!-- Real-time Feed Section -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:text="🔥 Live Feed from People You Follow"
-            android:textColor="#1a1a1a"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <!-- Feed RecyclerView -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/activityFeedRecyclerView"
+        <!-- Featured Address Section -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/featuredAddressCard"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:minHeight="400dp" />
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            android:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
+
+                <!-- Featured User Avatar -->
+                <View
+                    android:id="@+id/featuredUserAvatar"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="#9945FF"
+                    android:layout_marginEnd="12dp" />
+
+                <!-- Featured User Info -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:id="@+id/featuredUserName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Featured Creator"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#333333" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⭐"
+                            android:textSize="16sp"
+                            android:layout_marginStart="8dp" />
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/featuredUserWallet"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="ABC1...XYZ9"
+                        android:textSize="14sp"
+                        android:textColor="#666666"
+                        android:layout_marginTop="2dp" />
+
+                    <TextView
+                        android:id="@+id/featuredUserStats"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="🚀 5 tokens launched • ❤️ 1.2K likes"
+                        android:textSize="12sp"
+                        android:textColor="#9945FF"
+                        android:layout_marginTop="4dp" />
+
+                </LinearLayout>
+
+                <!-- Follow Button -->
+                <Button
+                    android:id="@+id/followFeaturedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="Follow"
+                    android:textSize="12sp"
+                    android:background="@drawable/follow_button_background"
+                    android:textColor="#9945FF"
+                    android:paddingHorizontal="12dp"
+                    android:minWidth="0dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Who Voted Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="👥 Who Voted"
+                android:textColor="#1a1a1a"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/votersRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+        </LinearLayout>
+
+        <!-- My Following Activities -->
+        <LinearLayout
+            android:id="@+id/followingSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="🔥 My Following"
+                android:textColor="#1a1a1a"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/followingRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+        </LinearLayout>
 
         <!-- Empty State -->
         <LinearLayout
