@@ -29,11 +29,22 @@
                 android:textSize="24sp"
                 android:textStyle="bold" />
 
+            <Button
+                android:id="@+id/leaderboardButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:backgroundTint="#9945FF"
+                android:paddingHorizontal="12dp"
+                android:text="🏆 Rankings"
+                android:textColor="#ffffff"
+                android:textSize="12sp" />
+
             <ImageView
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@android:drawable/ic_menu_recent_history"
-                android:tint="#9945FF" />
+                app:tint="#9945FF" />
 
         </LinearLayout>
 
