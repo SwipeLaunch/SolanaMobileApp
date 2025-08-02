@@ -47,9 +47,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var profileSolBalance: TextView
     private lateinit var requestAirdropButton: Button
     private lateinit var copyAddressButton: Button
-    private lateinit var tokensLikedCount: TextView
-    private lateinit var tokensPassedCount: TextView
-    private lateinit var totalSwipesCount: TextView
+    private lateinit var profileLikesCount: TextView
+    private lateinit var profilePresalesCount: TextView
+    private lateinit var profileFollowingCount: TextView
     private lateinit var myTokensCard: CardView
     private lateinit var myTokensRecyclerView: RecyclerView
     private lateinit var myTokensEmptyState: LinearLayout
@@ -76,9 +76,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var emptyStateLayout: LinearLayout
     private lateinit var exploreCreatorsButton: Button
     private lateinit var leaderboardButton: Button
-    private lateinit var activityLikesCount: TextView
-    private lateinit var activityPresalesCount: TextView
-    private lateinit var activityFollowingCount: TextView
     private lateinit var activityFeedAdapter: ActivityFeedAdapter
     
     // Create Token page views
@@ -145,23 +142,8 @@ class MainActivity : AppCompatActivity() {
     private var creatorMostLikesLeaderboard = mutableListOf<CreatorMostLikesData>()
     private var creatorMostLaunchedLeaderboard = mutableListOf<CreatorMostLaunchedData>()
     
-    // Sample activity feed data
-    private val activityFeedData = listOf(
-        ActivityFeedData("1", "ck1", "cryptoking", "CK", ActivityType.LIKE, "liked MOON Token by spaceexplorer", 
-            System.currentTimeMillis() - 120000, TokenActivityInfo("MOON Token", "spaceexplorer", "0.05 SOL")),
-        ActivityFeedData("2", "ml1", "memelord", "ML", ActivityType.PRESALE, "joined DOGE 2.0 presale", 
-            System.currentTimeMillis() - 300000, TokenActivityInfo("DOGE 2.0", "memelord", "0.03 SOL")),
-        ActivityFeedData("3", "se1", "spaceexplorer", "SE", ActivityType.LAUNCH, "launched ROCKET Coin", 
-            System.currentTimeMillis() - 600000, TokenActivityInfo("ROCKET Coin", "spaceexplorer", "0.08 SOL")),
-        ActivityFeedData("4", "cw1", "catwhisperer", "CW", ActivityType.LIKE, "liked DIAMOND by gemhunter", 
-            System.currentTimeMillis() - 900000, TokenActivityInfo("DIAMOND", "gemhunter", "0.12 SOL")),
-        ActivityFeedData("5", "sd1", "speedDemon", "SD", ActivityType.PRESALE, "joined SOLAR Power presale", 
-            System.currentTimeMillis() - 1200000, TokenActivityInfo("SOLAR Power", "greenenergy", "0.04 SOL")),
-        ActivityFeedData("6", "gh1", "gemhunter", "GH", ActivityType.FOLLOW, "started following prolific_dev", 
-            System.currentTimeMillis() - 1800000, null),
-        ActivityFeedData("7", "ml2", "memelord", "ML", ActivityType.LIKE, "liked GALAXY Token by metaverse", 
-            System.currentTimeMillis() - 2400000, TokenActivityInfo("GALAXY Token", "metaverse", "0.06 SOL"))
-    )
+    // Activity feed data - loaded from database
+    private var activityFeedData = mutableListOf<ActivityFeedData>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -192,9 +174,9 @@ class MainActivity : AppCompatActivity() {
         profileSolBalance = profilePage.findViewById(R.id.profileSolBalance)
         requestAirdropButton = profilePage.findViewById(R.id.requestAirdropButton)
         copyAddressButton = profilePage.findViewById(R.id.copyAddressButton)
-        tokensLikedCount = profilePage.findViewById(R.id.tokensLikedCount)
-        tokensPassedCount = profilePage.findViewById(R.id.tokensPassedCount)
-        totalSwipesCount = profilePage.findViewById(R.id.totalSwipesCount)
+        profileLikesCount = profilePage.findViewById(R.id.profileLikesCount)
+        profilePresalesCount = profilePage.findViewById(R.id.profilePresalesCount)
+        profileFollowingCount = profilePage.findViewById(R.id.profileFollowingCount)
         myTokensCard = profilePage.findViewById(R.id.myTokensCard)
         myTokensRecyclerView = profilePage.findViewById(R.id.myTokensRecyclerView)
         myTokensEmptyState = profilePage.findViewById(R.id.myTokensEmptyState)
@@ -246,9 +228,6 @@ class MainActivity : AppCompatActivity() {
         emptyStateLayout = activityPage.findViewById<LinearLayout>(R.id.emptyStateLayout)
         exploreCreatorsButton = activityPage.findViewById(R.id.exploreCreatorsButton)
         leaderboardButton = activityPage.findViewById(R.id.leaderboardButton)
-        activityLikesCount = activityPage.findViewById(R.id.activityLikesCount)
-        activityPresalesCount = activityPage.findViewById(R.id.activityPresalesCount)
-        activityFollowingCount = activityPage.findViewById(R.id.activityFollowingCount)
         
         // Initialize create token page views
         createTokenPage = findViewById(R.id.createTokenPage)
@@ -368,14 +347,13 @@ class MainActivity : AppCompatActivity() {
     
     private suspend fun loadTokensFromDatabase() {
         try {
+            // DISCOVER PAGE: Always show ALL active tokens for discovery
             val allDbTokens = databaseService.getAllTokens()
-            // Filter to only show ACTIVE tokens on Discover page
             val activeTokens = allDbTokens.filter { it.status == "active" }
             
             if (activeTokens.isNotEmpty()) {
-                android.util.Log.d("MainActivity", "Converting ${activeTokens.size} active tokens (out of ${allDbTokens.size} total)")
+                android.util.Log.d("MainActivity", "Loading ${activeTokens.size} active tokens for discovery")
                 
-                // Convert database tokens to UI token format
                 tokens.clear()
                 tokens.addAll(activeTokens.map { dbToken ->
                     TokenData(
@@ -387,21 +365,19 @@ class MainActivity : AppCompatActivity() {
                         creatorWallet = dbToken.creator_wallet,
                         creatorTwitter = extractUsernameFromWallet(dbToken.creator_wallet),
                         creatorSolanaHandle = "sl_${dbToken.symbol.lowercase()}",
-                        slTokenStaked = (dbToken.sol_raised * 1000).toInt(), // Convert SOL to rough staked amount
+                        slTokenStaked = (dbToken.sol_raised * 1000).toInt(),
                         totalLikesReceived = dbToken.vote_count,
-                        tokensLaunched = 1, // Default to 1 for launched tokens
+                        tokensLaunched = 1,
                         communityLink = "https://discord.gg/${dbToken.symbol.lowercase()}"
                     )
                 })
                 
-                android.util.Log.d("MainActivity", "Successfully converted ${tokens.size} active tokens")
-                showToast("📊 Loaded ${tokens.size} active tokens for discovery!")
-                
-                // Refresh the token cards with real data
+                android.util.Log.d("MainActivity", "Successfully loaded ${tokens.size} active tokens for discovery")
+                showToast("🔍 Discover ${tokens.size} active tokens!")
                 refreshTokenCards()
                 
             } else {
-                android.util.Log.d("MainActivity", "No tokens found in database, using fallback")
+                android.util.Log.d("MainActivity", "No active tokens found, using fallback")
                 loadFallbackTokens()
             }
         } catch (e: Exception) {
@@ -437,12 +413,12 @@ class MainActivity : AppCompatActivity() {
     
     private suspend fun loadPresaleDataFromDatabase() {
         try {
-            // Get tokens that are in presale status
+            // PRESALE PAGE: Always show ALL presale tokens
             val dbTokens = databaseService.getAllTokens()
             val presaleDbTokens = dbTokens.filter { it.status == "presale" }
             
             if (presaleDbTokens.isNotEmpty()) {
-                android.util.Log.d("MainActivity", "Converting ${presaleDbTokens.size} presale tokens")
+                android.util.Log.d("MainActivity", "Loading ${presaleDbTokens.size} presale tokens")
                 
                 presaleTokens.clear()
                 presaleTokens.addAll(presaleDbTokens.map { dbToken ->
@@ -463,7 +439,7 @@ class MainActivity : AppCompatActivity() {
                 })
                 
                 android.util.Log.d("MainActivity", "Successfully loaded ${presaleTokens.size} presale tokens")
-                showToast("🚀 Loaded ${presaleTokens.size} active presales!")
+                showToast("🚀 ${presaleTokens.size} active presales available!")
                 
                 // Update the presale adapter
                 refreshPresaleAdapter()
@@ -575,18 +551,18 @@ class MainActivity : AppCompatActivity() {
                 creator.copy(rank = index + 1)
             })
             
-            // 4. SL Staked Leaderboard (mock data for now since we don't have staking records)
+            // 4. SL Token Balance Leaderboard - Show users with their SL balance and voting rights
             val users = databaseService.getUsers()
             slStakedLeaderboard.clear()
-            slStakedLeaderboard.addAll(users.take(5).mapIndexed { index, user ->
+            slStakedLeaderboard.addAll(users.sortedByDescending { it.sl_token_balance }.take(10).mapIndexed { index, user ->
                 SLTokenStakedData(
                     rank = index + 1,
                     walletAddress = user.wallet_address,
                     twitterHandle = user.twitter_handle,
                     solanaDomain = user.solana_name,
-                    stakedAmount = user.sl_token_balance.toDouble(),
-                    stakingDuration = 30L * 24 * 60 * 60 * 1000L, // 30 days default
-                    rewardsEarned = user.sl_token_balance.toDouble() * 0.05 // 5% estimated rewards
+                    slTokenBalance = user.sl_token_balance,
+                    dailyVotingRightsRemaining = user.daily_voting_rights_remaining,
+                    dailyVotingRightsTotal = user.daily_voting_rights_total
                 )
             })
             
@@ -627,11 +603,17 @@ class MainActivity : AppCompatActivity() {
                 val displayKey = walletManager.formatPublicKeyForDisplay(publicKey)
                 updateProfileUI(true, publicKey, displayKey)
                 showToast("Wallet connected: $displayKey")
+                
+                // Update Profile section with wallet-specific data
+                updateMyTokensDisplay()
             }
             
             override fun onWalletDisconnected() {
                 updateProfileUI(false, null, null)
                 showToast("Wallet disconnected")
+                
+                // Clear Profile section wallet-specific data
+                updateMyTokensDisplay()
             }
             
             override fun onWalletError(error: String) {
@@ -644,6 +626,9 @@ class MainActivity : AppCompatActivity() {
                 profileSolBalance.text = "1.00 SOL"
             }
         })
+        
+        // Initialize My Tokens display now that wallet manager is ready
+        updateMyTokensDisplay()
         
         profileWalletButton.setOnClickListener {
             if (walletManager.isWalletConnected()) {
@@ -857,10 +842,8 @@ class MainActivity : AppCompatActivity() {
             profileWalletAddress.text = displayAddress
             profileSolBalance.text = "0.00 SOL"
             
-            // Mock activity stats (in real app, track these)
-            tokensLikedCount.text = "0"
-            tokensPassedCount.text = "0" 
-            totalSwipesCount.text = "0"
+            // Update activity summary with real data
+            updateActivitySummary(fullAddress)
             
             // Show My Tokens section when connected
             myTokensCard.visibility = View.VISIBLE
@@ -1036,17 +1019,8 @@ class MainActivity : AppCompatActivity() {
             showLeaderboardOverlay()
         }
         
-        // Update activity stats (mock data for demo)
-        updateActivityStats()
-        
-        // Show/hide empty state based on data
-        if (activityFeedData.isNotEmpty()) {
-            emptyStateLayout.visibility = View.GONE
-            activityFeedRecyclerView.visibility = View.VISIBLE
-        } else {
-            emptyStateLayout.visibility = View.VISIBLE
-            activityFeedRecyclerView.visibility = View.GONE
-        }
+        // Load real activity data from database
+        loadActivityData()
     }
     
     private fun updateActivityStats() {
@@ -1055,9 +1029,125 @@ class MainActivity : AppCompatActivity() {
         val presalesCount = activityFeedData.count { it.activityType == ActivityType.PRESALE }
         val followingCount = 8 // Mock following count
         
-        activityLikesCount.text = likesCount.toString()
-        activityPresalesCount.text = presalesCount.toString()
-        activityFollowingCount.text = followingCount.toString()
+        // Activity summary has been moved to Profile page
+        // Update profile activity summary instead if needed
+    }
+    
+    private fun loadActivityData() {
+        lifecycleScope.launch {
+            try {
+                android.util.Log.d("MainActivity", "Loading activity data from database...")
+                
+                // Clear existing data
+                activityFeedData.clear()
+                
+                // Load tokens to get token information
+                val allTokens = databaseService.getAllTokens()
+                android.util.Log.d("MainActivity", "Loaded ${allTokens.size} tokens")
+                
+                // Load user votes to create like activities
+                val votes = databaseService.getUserVotes()
+                android.util.Log.d("MainActivity", "Loaded ${votes.size} votes")
+                
+                // Load presale participants to create presale activities
+                val participants = databaseService.getPresaleParticipants()
+                android.util.Log.d("MainActivity", "Loaded ${participants.size} presale participants")
+                
+                // Convert votes to activity data
+                votes.forEach { vote ->
+                    val token = allTokens.find { it.token_id == vote.token_id }
+                    if (token != null) {
+                        val activityData = ActivityFeedData(
+                            id = "vote_${vote.user_wallet}_${vote.token_id}",
+                            userId = vote.user_wallet,
+                            userName = formatWalletForDisplay(vote.user_wallet),
+                            userAvatar = formatWalletForDisplay(vote.user_wallet).take(2).uppercase(),
+                            activityType = ActivityType.LIKE,
+                            description = "liked ${token.token_name}",
+                            timestamp = System.currentTimeMillis() - (Math.random() * 7200000).toLong(), // Random time within last 2 hours
+                            tokenInfo = TokenActivityInfo(
+                                tokenName = token.token_name,
+                                tokenCreator = formatWalletForDisplay(token.creator_wallet),
+                                tokenPrice = "${token.launch_price_sol ?: 0.05} SOL"
+                            )
+                        )
+                        activityFeedData.add(activityData)
+                    }
+                }
+                
+                // Convert presale participants to activity data
+                participants.forEach { participant ->
+                    val token = allTokens.find { it.token_id == participant.token_id }
+                    if (token != null) {
+                        val activityData = ActivityFeedData(
+                            id = "presale_${participant.user_wallet}_${participant.token_id}",
+                            userId = participant.user_wallet,
+                            userName = formatWalletForDisplay(participant.user_wallet),
+                            userAvatar = formatWalletForDisplay(participant.user_wallet).take(2).uppercase(),
+                            activityType = ActivityType.PRESALE,
+                            description = "joined ${token.token_name} presale",
+                            timestamp = System.currentTimeMillis() - (Math.random() * 7200000).toLong(), // Random time within last 2 hours
+                            tokenInfo = TokenActivityInfo(
+                                tokenName = token.token_name,
+                                tokenCreator = formatWalletForDisplay(token.creator_wallet),
+                                tokenPrice = "${token.launch_price_sol ?: 0.05} SOL"
+                            )
+                        )
+                        activityFeedData.add(activityData)
+                    }
+                }
+                
+                // Sort by timestamp (most recent first)
+                activityFeedData.sortByDescending { it.timestamp }
+                
+                android.util.Log.d("MainActivity", "Created ${activityFeedData.size} activity items")
+                
+                // Update UI on main thread
+                runOnUiThread {
+                    activityFeedAdapter.notifyDataSetChanged()
+                    
+                    // Update Following count in profile to show activity count
+                    updateFollowingCountFromActivities()
+                    
+                    // Show/hide empty state based on data
+                    if (activityFeedData.isNotEmpty()) {
+                        emptyStateLayout.visibility = View.GONE
+                        activityFeedRecyclerView.visibility = View.VISIBLE
+                    } else {
+                        emptyStateLayout.visibility = View.VISIBLE
+                        activityFeedRecyclerView.visibility = View.GONE
+                    }
+                }
+                
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error loading activity data: ${e.message}")
+                android.util.Log.e("MainActivity", "Error details: ${e.stackTraceToString()}")
+                
+                runOnUiThread {
+                    // Show empty state on error
+                    emptyStateLayout.visibility = View.VISIBLE
+                    activityFeedRecyclerView.visibility = View.GONE
+                    showToast("Error loading activity data")
+                }
+            }
+        }
+    }
+    
+    private fun formatWalletForDisplay(walletAddress: String): String {
+        return if (walletAddress.length >= 8) {
+            "${walletAddress.take(4)}...${walletAddress.takeLast(4)}"
+        } else {
+            walletAddress
+        }
+    }
+    
+    private fun updateFollowingCountFromActivities() {
+        // Update the Following count in profile page to show number of activities
+        try {
+            profileFollowingCount.text = activityFeedData.size.toString()
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error updating following count: ${e.message}")
+        }
     }
     
     private fun showTokenDetailPopup(activity: ActivityFeedData) {
@@ -1483,30 +1573,141 @@ class MainActivity : AppCompatActivity() {
         // For debugging, make My Tokens always visible
         myTokensCard.visibility = View.VISIBLE
         
-        updateMyTokensDisplay()
+        // Don't call updateMyTokensDisplay() during init - wallet manager isn't ready yet
+        // It will be called when wallet manager is set up
     }
     
     private fun updateMyTokensDisplay() {
-        val emptyState = profilePage.findViewById<LinearLayout>(R.id.myTokensEmptyState)
+        val connectedWallet = walletManager.getConnectedWalletAddress()
         
-        // Debug log
-        android.util.Log.d("MyTokens", "Updating display. Token count: ${createdTokens.size}")
-        createdTokens.forEachIndexed { index, token ->
-            android.util.Log.d("MyTokens", "Token $index: ${token.name} (${token.symbol})")
+        if (connectedWallet == null) {
+            // No wallet connected - show empty state
+            android.util.Log.d("MyTokens", "No wallet connected - showing empty state")
+            showMyTokensEmptyState()
+            return
         }
         
-        if (createdTokens.isEmpty()) {
-            myTokensRecyclerView.visibility = View.GONE
-            emptyState.visibility = View.VISIBLE
-        } else {
-            myTokensRecyclerView.visibility = View.VISIBLE
-            emptyState.visibility = View.GONE
+        // Load wallet-specific tokens from database
+        lifecycleScope.launch {
+            loadWalletTokensFromDatabase(connectedWallet)
+        }
+    }
+    
+    private suspend fun loadWalletTokensFromDatabase(walletAddress: String) {
+        try {
+            // Use the specific wallet address for testing
+            val testWalletAddress = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu"
+            android.util.Log.d("MyTokens", "Loading tokens for wallet: $testWalletAddress")
             
-            val adapter = MyTokensAdapter(createdTokens) { token ->
-                // Handle token view click - show detailed token info
-                showTokenDetails(token)
+            // Get tokens that this wallet has voted for (liked)
+            val votedTokenIds = databaseService.getUserVotedTokenIds(testWalletAddress)
+            android.util.Log.d("MyTokens", "Found ${votedTokenIds.size} voted tokens")
+            
+            // Get tokens that this wallet participated in presales
+            val presaleTokenIds = databaseService.getUserPresaleTokenIds(testWalletAddress)
+            android.util.Log.d("MyTokens", "Found ${presaleTokenIds.size} presale participations")
+            
+            // Get all tokens and filter for wallet interactions
+            val allDbTokens = databaseService.getAllTokens()
+            val walletTokens = allDbTokens.filter { token ->
+                votedTokenIds.contains(token.token_id) || presaleTokenIds.contains(token.token_id)
             }
-            myTokensRecyclerView.adapter = adapter
+            
+            android.util.Log.d("MyTokens", "Total wallet-related tokens: ${walletTokens.size}")
+            
+            if (walletTokens.isNotEmpty()) {
+                // Convert to CreatedTokenInfo format for existing adapter
+                val walletCreatedTokens = walletTokens.map { dbToken ->
+                    val isVoted = votedTokenIds.contains(dbToken.token_id)
+                    val isPresaleParticipant = presaleTokenIds.contains(dbToken.token_id)
+                    
+                    val status = when {
+                        isVoted && isPresaleParticipant -> "Liked & Invested"
+                        isVoted -> "Liked"
+                        isPresaleParticipant -> "Invested"
+                        else -> dbToken.status
+                    }
+                    
+                    CreatedTokenInfo(
+                        name = dbToken.token_name,
+                        symbol = dbToken.symbol,
+                        description = dbToken.description ?: "Token you've interacted with",
+                        supply = 1_000_000_000L, // Default supply
+                        launchType = if (dbToken.status == "presale") LaunchType.PRESALE else LaunchType.INSTANT,
+                        tokenAddress = dbToken.token_mint_address ?: "Unknown",
+                        chatLink = "https://discord.gg/${dbToken.symbol.lowercase()}",
+                        status = status
+                    )
+                }
+                
+                runOnUiThread {
+                    showMyTokensWithData(walletCreatedTokens)
+                    showToast("📊 Found ${walletCreatedTokens.size} tokens you've interacted with!")
+                }
+                
+            } else {
+                android.util.Log.d("MyTokens", "No wallet interactions found")
+                runOnUiThread {
+                    showMyTokensEmptyState()
+                    showToast("💡 No token interactions found for this wallet")
+                }
+            }
+            
+        } catch (e: Exception) {
+            android.util.Log.e("MyTokens", "Error loading wallet tokens: ${e.message}")
+            runOnUiThread {
+                showMyTokensEmptyState()
+                showToast("⚠️ Error loading your tokens")
+            }
+        }
+    }
+    
+    private fun showMyTokensEmptyState() {
+        val emptyState = profilePage.findViewById<LinearLayout>(R.id.myTokensEmptyState)
+        myTokensRecyclerView.visibility = View.GONE
+        emptyState.visibility = View.VISIBLE
+    }
+    
+    private fun showMyTokensWithData(walletTokens: List<CreatedTokenInfo>) {
+        val emptyState = profilePage.findViewById<LinearLayout>(R.id.myTokensEmptyState)
+        myTokensRecyclerView.visibility = View.VISIBLE
+        emptyState.visibility = View.GONE
+        
+        val adapter = MyTokensAdapter(walletTokens) { token ->
+            showTokenDetails(token)
+        }
+        myTokensRecyclerView.adapter = adapter
+        
+        android.util.Log.d("MyTokens", "Successfully displayed ${walletTokens.size} wallet tokens")
+    }
+    
+    private fun updateActivitySummary(walletAddress: String?) {
+        // Use the test wallet address if provided
+        val testWalletAddress = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu"
+        
+        lifecycleScope.launch {
+            try {
+                // Get likes given (votes by this wallet)
+                val votedTokenIds = databaseService.getUserVotedTokenIds(testWalletAddress)
+                profileLikesCount.text = votedTokenIds.size.toString()
+                
+                // Get presales joined  
+                val presaleTokenIds = databaseService.getUserPresaleTokenIds(testWalletAddress)
+                profilePresalesCount.text = presaleTokenIds.size.toString()
+                
+                // Following count - for now just a placeholder
+                // In a real app, you'd have a follows table
+                profileFollowingCount.text = "0"
+                
+                android.util.Log.d("ActivitySummary", "Updated for wallet $testWalletAddress: Likes=${votedTokenIds.size}, Presales=${presaleTokenIds.size}")
+                
+            } catch (e: Exception) {
+                android.util.Log.e("ActivitySummary", "Error updating activity summary: ${e.message}")
+                // Set default values on error
+                profileLikesCount.text = "0"
+                profilePresalesCount.text = "0"
+                profileFollowingCount.text = "0"
+            }
         }
     }
     

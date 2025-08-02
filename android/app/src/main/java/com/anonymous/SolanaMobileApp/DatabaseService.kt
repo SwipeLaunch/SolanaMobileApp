@@ -194,4 +194,42 @@ class DatabaseService {
             }
         }
     }
+    
+    suspend fun getUserVotedTokenIds(walletAddress: String): List<Int> {
+        return withContext(Dispatchers.IO) {
+            try {
+                android.util.Log.d("DatabaseService", "Getting voted tokens for wallet: $walletAddress")
+                val votes = supabase.from("user_votes")
+                    .select()
+                    .decodeList<UserVoteRecord>()
+                    .filter { it.user_wallet == walletAddress }
+                
+                val tokenIds = votes.map { it.token_id }
+                android.util.Log.d("DatabaseService", "Found ${tokenIds.size} voted tokens for wallet")
+                tokenIds
+            } catch (e: Exception) {
+                android.util.Log.e("DatabaseService", "Error getting voted tokens: ${e.message}")
+                emptyList()
+            }
+        }
+    }
+    
+    suspend fun getUserPresaleTokenIds(walletAddress: String): List<Int> {
+        return withContext(Dispatchers.IO) {
+            try {
+                android.util.Log.d("DatabaseService", "Getting presale tokens for wallet: $walletAddress")
+                val participants = supabase.from("presale_participants")
+                    .select()
+                    .decodeList<PresaleParticipantRecord>()
+                    .filter { it.user_wallet == walletAddress }
+                
+                val tokenIds = participants.map { it.token_id }
+                android.util.Log.d("DatabaseService", "Found ${tokenIds.size} presale tokens for wallet")
+                tokenIds
+            } catch (e: Exception) {
+                android.util.Log.e("DatabaseService", "Error getting presale tokens: ${e.message}")
+                emptyList()
+            }
+        }
+    }
 }

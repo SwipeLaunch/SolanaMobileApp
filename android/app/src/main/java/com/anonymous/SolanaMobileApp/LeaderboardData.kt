@@ -28,15 +28,15 @@ data class TokenLaunchedData(
     }
 }
 
-// SL Token staked leaderboard data
+// SL Token balance and voting data
 data class SLTokenStakedData(
     val rank: Int,
     val walletAddress: String,
     val twitterHandle: String?, // Optional Twitter handle
     val solanaDomain: String?, // Optional .sol domain
-    val stakedAmount: Double, // Amount of SL tokens staked
-    val stakingDuration: Long, // How long they've been staking (ms)
-    val rewardsEarned: Double
+    val slTokenBalance: Long, // Amount of SL tokens in wallet
+    val dailyVotingRightsRemaining: Int, // Likes left for today
+    val dailyVotingRightsTotal: Int // Total daily likes
 ) {
     fun getDisplayName(): String {
         return when {
@@ -46,20 +46,23 @@ data class SLTokenStakedData(
         }
     }
     
-    fun getFormattedStakedAmount(): String {
+    fun getFormattedSLBalance(): String {
         return when {
-            stakedAmount >= 1_000_000 -> "${String.format("%.2f", stakedAmount / 1_000_000)}M SL"
-            stakedAmount >= 1_000 -> "${String.format("%.1f", stakedAmount / 1_000)}K SL"
-            else -> "${String.format("%.0f", stakedAmount)} SL"
+            slTokenBalance >= 1_000_000 -> "${String.format("%.2f", slTokenBalance / 1_000_000.0)}M SL"
+            slTokenBalance >= 1_000 -> "${String.format("%.1f", slTokenBalance / 1_000.0)}K SL"
+            else -> "${slTokenBalance} SL"
         }
     }
     
-    fun getStakingDurationText(): String {
-        val days = stakingDuration / (1000 * 60 * 60 * 24)
-        return when {
-            days > 30 -> "${days / 30}mo"
-            days > 0 -> "${days}d"
-            else -> "New"
+    fun getVotingRightsText(): String {
+        return "$dailyVotingRightsRemaining/$dailyVotingRightsTotal likes"
+    }
+    
+    fun getVotingRightsPercentage(): Float {
+        return if (dailyVotingRightsTotal > 0) {
+            dailyVotingRightsRemaining.toFloat() / dailyVotingRightsTotal.toFloat()
+        } else {
+            0f
         }
     }
 }

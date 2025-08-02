@@ -61,7 +61,7 @@
                     android:id="@+id/stakeDuration"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="90d"
+                    android:text="5/10 likes"
                     android:textSize="12sp"
                     android:textColor="#4CAF50"
                     android:background="#4CAF5020"
@@ -101,7 +101,7 @@
                 android:id="@+id/rewardsEarned"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="12.5K rewards"
+                android:text="Likes left today"
                 android:textSize="12sp"
                 android:textColor="#666666" />
 

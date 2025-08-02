@@ -91,9 +91,8 @@ class WalletManager(private val context: Context) {
     }
     
     private fun generateMockPublicKey(): String {
-        // Generate a realistic-looking Solana public key (base58, ~44 characters)
-        val chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-        return (1..44).map { chars[Random.nextInt(chars.length)] }.joinToString("")
+        // Use the test wallet address
+        return "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu"
     }
     
     suspend fun disconnectWallet() = withContext(Dispatchers.IO) {
@@ -175,6 +174,15 @@ class WalletManager(private val context: Context) {
             "${publicKey.take(4)}...${publicKey.takeLast(4)}"
         } else {
             publicKey
+        }
+    }
+    
+    // Get current connected wallet address
+    fun getConnectedWalletAddress(): String? {
+        return if (isConnected && connectedPublicKey != null) {
+            String(connectedPublicKey!!)
+        } else {
+            null
         }
     }
 }
