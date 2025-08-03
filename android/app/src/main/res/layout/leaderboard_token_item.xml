@@ -28,11 +28,12 @@
             android:layout_marginEnd="12dp" />
 
         <!-- Token Logo -->
-        <View
+        <ImageView
             android:id="@+id/tokenLogo"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="#9945FF"
+            android:scaleType="centerCrop"
             android:layout_marginEnd="12dp" />
 
         <!-- Token Info -->

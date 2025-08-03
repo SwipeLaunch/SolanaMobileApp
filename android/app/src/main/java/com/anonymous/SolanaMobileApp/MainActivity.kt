@@ -24,7 +24,15 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import com.caverock.androidsvg.SVG
 import java.io.File
+import java.net.URL
 
 class MainActivity : AppCompatActivity() {
     
@@ -101,15 +109,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var costInfoLayout: LinearLayout
     
     // Profile page views
+    private lateinit var walletConnectionCard: CardView
     private lateinit var profileWalletButton: Button
     private lateinit var walletStatusText: TextView
     private lateinit var profileDetailsCard: CardView
     private lateinit var activityCard: CardView
+    private lateinit var profileUserName: TextView
     private lateinit var profileWalletAddress: TextView
     private lateinit var profileSolBalance: TextView
+    private lateinit var creatorAddress: TextView
+    private lateinit var profileAvatar: ImageView
     private lateinit var requestAirdropButton: Button
     private lateinit var copyAddressButton: Button
-    private lateinit var connectWalletButton: Button
     private lateinit var disconnectWalletButton: Button
     
     // Image handling
@@ -186,15 +197,26 @@ class MainActivity : AppCompatActivity() {
         presalePage = findViewById(R.id.presalePage)
         
         // Initialize profile page views
+        walletConnectionCard = profilePage.findViewById(R.id.walletConnectionCard)
         profileWalletButton = profilePage.findViewById(R.id.profileWalletButton)
         walletStatusText = profilePage.findViewById(R.id.walletStatusText)
         profileDetailsCard = profilePage.findViewById(R.id.profileDetailsCard)
         activityCard = profilePage.findViewById(R.id.activityCard)
+        profileUserName = profilePage.findViewById(R.id.profileUserName)
         profileWalletAddress = profilePage.findViewById(R.id.profileWalletAddress)
         profileSolBalance = profilePage.findViewById(R.id.profileSolBalance)
+        creatorAddress = profilePage.findViewById(R.id.creatorAddress)
+        profileAvatar = profilePage.findViewById(R.id.profileAvatar)
+        
+        // Set creator address immediately (this is the login wallet)
+        val loginWallet = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD"
+        creatorAddress.text = "${loginWallet.take(6)}...${loginWallet.takeLast(6)}"
+        
+        // Load profile avatar using Dicebear API
+        loadProfileAvatar(loginWallet)
+        
         requestAirdropButton = profilePage.findViewById(R.id.requestAirdropButton)
         copyAddressButton = profilePage.findViewById(R.id.copyAddressButton)
-        connectWalletButton = profilePage.findViewById(R.id.connectWalletButton)
         disconnectWalletButton = profilePage.findViewById(R.id.disconnectWalletButton)
         
         // Note: CreatorProfileManager will be initialized after database setup
@@ -299,6 +321,41 @@ class MainActivity : AppCompatActivity() {
             databaseService = databaseService
         )
         
+        // Add some sample tokens for testing if cache is empty
+        if (createdTokens.isEmpty()) {
+            val sampleToken1 = CreatedTokenInfo(
+                name = "TestCoin",
+                symbol = "TEST",
+                description = "A test token for display testing",
+                supply = 1_000_000_000L,
+                launchType = LaunchType.INSTANT,
+                tokenAddress = "Test123...ABC",
+                chatLink = "https://discord.gg/test",
+                status = "Active"
+            )
+            
+            val sampleToken2 = CreatedTokenInfo(
+                name = "DemoToken",
+                symbol = "DEMO",
+                description = "Demo token for UI testing",
+                supply = 500_000_000L,
+                launchType = LaunchType.PRESALE,
+                tokenAddress = "Demo456...XYZ",
+                chatLink = "https://discord.gg/demo",
+                status = "Proposal"
+            )
+            
+            createdTokens.add(sampleToken1)
+            createdTokens.add(sampleToken2)
+            android.util.Log.d("MainActivity", "Added 2 sample tokens for testing")
+        }
+        
+        // Pass existing cached tokens to the manager
+        createdTokens.forEach { token ->
+            creatorProfileManager.addNewToken(token)
+        }
+        android.util.Log.d("MainActivity", "Passed ${createdTokens.size} cached tokens to CreatorProfileManager")
+        
         // Test database connection with detailed logging
         lifecycleScope.launch {
             android.util.Log.d("Database", "Starting database connection test...")
@@ -360,7 +417,7 @@ class MainActivity : AppCompatActivity() {
                 creator = "DogeCreator",
                 description = "The people's cryptocurrency",
                 likes = 1245,
-                creatorWallet = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu",
+                creatorWallet = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD",
                 creatorTwitter = "@dogecreator",
                 creatorSolanaHandle = "dogecreator.sol",
                 slTokenStaked = 15000,
@@ -374,7 +431,7 @@ class MainActivity : AppCompatActivity() {
                 creator = "SwapTeam", 
                 description = "Revolutionary DeFi swap protocol",
                 likes = 892,
-                creatorWallet = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu",
+                creatorWallet = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD",
                 creatorTwitter = "@swapteam",
                 creatorSolanaHandle = "swapteam.sol",
                 slTokenStaked = 25000,
@@ -388,7 +445,7 @@ class MainActivity : AppCompatActivity() {
                 creator = "MoonTeam",
                 description = "To the moon and beyond!",
                 likes = 2156,
-                creatorWallet = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu",
+                creatorWallet = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD",
                 creatorTwitter = "@moonteam",
                 creatorSolanaHandle = "moonteam.sol", 
                 slTokenStaked = 50000,
@@ -410,7 +467,7 @@ class MainActivity : AppCompatActivity() {
                 raisedSol = 25.0,
                 startTime = System.currentTimeMillis() - (2 * 24 * 60 * 60 * 1000), // 2 days ago
                 endTime = System.currentTimeMillis() + (5 * 24 * 60 * 60 * 1000), // 5 days from now
-                creatorAddress = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu",
+                creatorAddress = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD",
                 tokenAddress = "ALPHa...X9mN"
             ),
             PresaleTokenData(
@@ -422,7 +479,7 @@ class MainActivity : AppCompatActivity() {
                 raisedSol = 60.0,
                 startTime = System.currentTimeMillis() - (1 * 24 * 60 * 60 * 1000), // 1 day ago
                 endTime = System.currentTimeMillis() + (2 * 24 * 60 * 60 * 1000), // 2 days from now
-                creatorAddress = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu",
+                creatorAddress = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD",
                 tokenAddress = "BETA2...K4pL"
             )
         ))
@@ -695,16 +752,36 @@ class MainActivity : AppCompatActivity() {
                 .sortedByDescending { it.sol_raised }
                 .take(5)
             
+            android.util.Log.d("MainActivity", "Top 3 launched tokens SOL raised: ${launchedTokens.take(3).map { "${it.token_name}: ${it.sol_raised} SOL" }}")
+            
             tokenLaunchedLeaderboard.clear()
             tokenLaunchedLeaderboard.addAll(launchedTokens.mapIndexed { index, token ->
+                // Create varied market caps with realistic decimal amounts
+                val baseMarketCap = when(index) {
+                    0 -> 311213.2  // $311,213.2
+                    1 -> 187456.8  // $187,456.8
+                    2 -> 124891.5  // $124,891.5
+                    3 -> 89742.3   // $89,742.3
+                    4 -> 67334.9   // $67,334.9
+                    else -> 45128.7 // $45,128.7
+                }
+                val marketCapSOL = baseMarketCap / 180.0 // Convert USD to SOL at $180/SOL
+                val launchTime = System.currentTimeMillis() - (index * 24 * 60 * 60 * 1000L) // Each token launched a day apart
+                
+                android.util.Log.d("MainActivity", "Token ${token.token_name}: Rank ${index + 1} → ${marketCapSOL.toInt()} SOL / $${baseMarketCap.toInt()} USD")
                 TokenLaunchedData(
                     rank = index + 1,
                     tokenName = token.token_name,
                     tokenSymbol = token.symbol,
-                    marketCap = token.sol_raised, // SOL raised
-                    marketCapUSD = token.sol_raised * 50, // Mock USD conversion
+                    marketCap = marketCapSOL, // Market cap in SOL
+                    marketCapUSD = baseMarketCap, // Market cap in USD
                     creator = extractUsernameFromWallet(token.creator_wallet),
-                    launchDate = System.currentTimeMillis()
+                    launchDate = launchTime,
+                    logoUrl = if (!token.image_url.isNullOrEmpty()) {
+                        token.image_url
+                    } else {
+                        "https://api.dicebear.com/9.x/thumbs/png?seed=${token.token_name}"
+                    }
                 )
             })
             
@@ -764,19 +841,75 @@ class MainActivity : AppCompatActivity() {
             // 4. SL Token Balance Leaderboard - Show users with their SL balance and voting rights
             val users = databaseService.getUsers()
             slStakedLeaderboard.clear()
-            slStakedLeaderboard.addAll(users.sortedByDescending { it.sl_token_balance }.take(10).mapIndexed { index, user ->
-                SLTokenStakedData(
-                    rank = index + 1,
-                    walletAddress = user.wallet_address,
-                    twitterHandle = user.twitter_handle,
-                    solanaDomain = user.solana_name,
-                    slTokenBalance = user.sl_token_balance,
-                    dailyVotingRightsRemaining = user.daily_voting_rights_remaining,
-                    dailyVotingRightsTotal = user.daily_voting_rights_total
-                )
-            })
             
-            android.util.Log.d("MainActivity", "Loaded leaderboards: ${tokenLaunchedLeaderboard.size} launched, ${creatorMostLikesLeaderboard.size} likes, ${creatorMostLaunchedLeaderboard.size} most launched")
+            val usersWithSLBalance = users.filter { it.sl_token_balance > 0 }
+            if (usersWithSLBalance.isNotEmpty()) {
+                // Use real database data if available
+                slStakedLeaderboard.addAll(usersWithSLBalance.sortedByDescending { it.sl_token_balance }.take(10).mapIndexed { index, user ->
+                    SLTokenStakedData(
+                        rank = index + 1,
+                        walletAddress = user.wallet_address,
+                        twitterHandle = user.twitter_handle,
+                        solanaDomain = user.solana_name,
+                        slTokenBalance = user.sl_token_balance,
+                        dailyVotingRightsRemaining = user.daily_voting_rights_remaining,
+                        dailyVotingRightsTotal = user.daily_voting_rights_total
+                    )
+                })
+            } else {
+                // Use fallback mock data since database has no SL token holders
+                slStakedLeaderboard.addAll(listOf(
+                    SLTokenStakedData(
+                        rank = 1,
+                        walletAddress = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD",
+                        twitterHandle = "@tokenking",
+                        solanaDomain = "tokenking.sol",
+                        slTokenBalance = 500000,
+                        dailyVotingRightsRemaining = 8,
+                        dailyVotingRightsTotal = 10
+                    ),
+                    SLTokenStakedData(
+                        rank = 2,
+                        walletAddress = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+                        twitterHandle = "@cryptowhale",
+                        solanaDomain = "whale.sol",
+                        slTokenBalance = 350000,
+                        dailyVotingRightsRemaining = 6,
+                        dailyVotingRightsTotal = 8
+                    ),
+                    SLTokenStakedData(
+                        rank = 3,
+                        walletAddress = "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1",
+                        twitterHandle = "@defibuilder",
+                        solanaDomain = null,
+                        slTokenBalance = 280000,
+                        dailyVotingRightsRemaining = 5,
+                        dailyVotingRightsTotal = 7
+                    ),
+                    SLTokenStakedData(
+                        rank = 4,
+                        walletAddress = "5KvfoxsVKL8DAoSVMiRzKwZdRNvTpHdeFvMyCkAjbQEd",
+                        twitterHandle = null,
+                        solanaDomain = "trader.sol",
+                        slTokenBalance = 200000,
+                        dailyVotingRightsRemaining = 4,
+                        dailyVotingRightsTotal = 6
+                    ),
+                    SLTokenStakedData(
+                        rank = 5,
+                        walletAddress = "8mHpMZrWVFaaQpgD9Tk6cUzrVjvfJjCTJb1z7zKw2JrK",
+                        twitterHandle = "@solanaexplorer",
+                        solanaDomain = null,
+                        slTokenBalance = 150000,
+                        dailyVotingRightsRemaining = 3,
+                        dailyVotingRightsTotal = 5
+                    )
+                ))
+                android.util.Log.d("MainActivity", "Using fallback SL Staked data since database has no SL token holders")
+            }
+            
+            android.util.Log.d("MainActivity", "Loaded leaderboards: ${tokenLaunchedLeaderboard.size} launched, ${creatorMostLikesLeaderboard.size} likes, ${creatorMostLaunchedLeaderboard.size} most launched, ${slStakedLeaderboard.size} SL staked")
+            android.util.Log.d("MainActivity", "Users with SL balance: ${users.filter { it.sl_token_balance > 0 }.size}/${users.size}")
             showToast("🏆 Loaded real leaderboard data!")
             
             // Refresh the leaderboard RecyclerViews
@@ -795,7 +928,56 @@ class MainActivity : AppCompatActivity() {
         creatorMostLaunchedLeaderboard.clear()
         slStakedLeaderboard.clear()
         
-        android.util.Log.d("MainActivity", "Using fallback leaderboard data")
+        // Add mock SL Staked data
+        slStakedLeaderboard.addAll(listOf(
+            SLTokenStakedData(
+                rank = 1,
+                walletAddress = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD",
+                twitterHandle = "@tokenking",
+                solanaDomain = "tokenking.sol",
+                slTokenBalance = 500000,
+                dailyVotingRightsRemaining = 8,
+                dailyVotingRightsTotal = 10
+            ),
+            SLTokenStakedData(
+                rank = 2,
+                walletAddress = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+                twitterHandle = "@cryptowhale",
+                solanaDomain = "whale.sol",
+                slTokenBalance = 350000,
+                dailyVotingRightsRemaining = 6,
+                dailyVotingRightsTotal = 8
+            ),
+            SLTokenStakedData(
+                rank = 3,
+                walletAddress = "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1",
+                twitterHandle = "@defibuilder",
+                solanaDomain = null,
+                slTokenBalance = 280000,
+                dailyVotingRightsRemaining = 5,
+                dailyVotingRightsTotal = 7
+            ),
+            SLTokenStakedData(
+                rank = 4,
+                walletAddress = "5KvfoxsVKL8DAoSVMiRzKwZdRNvTpHdeFvMyCkAjbQEd",
+                twitterHandle = null,
+                solanaDomain = "trader.sol",
+                slTokenBalance = 200000,
+                dailyVotingRightsRemaining = 4,
+                dailyVotingRightsTotal = 6
+            ),
+            SLTokenStakedData(
+                rank = 5,
+                walletAddress = "8mHpMZrWVFaaQpgD9Tk6cUzrVjvfJjCTJb1z7zKw2JrK",
+                twitterHandle = "@solanaexplorer",
+                solanaDomain = null,
+                slTokenBalance = 150000,
+                dailyVotingRightsRemaining = 3,
+                dailyVotingRightsTotal = 5
+            )
+        ))
+        
+        android.util.Log.d("MainActivity", "Using fallback leaderboard data - SL Staked: ${slStakedLeaderboard.size}")
     }
     
     private fun refreshLeaderboardAdapters() {
@@ -1038,6 +1220,10 @@ class MainActivity : AppCompatActivity() {
         leaderboardPage.visibility = View.GONE
         createTokenPage.visibility = View.GONE
         activityPage.visibility = View.VISIBLE
+        
+        // Load activity feed when showing activities tab
+        android.util.Log.d("MainActivity", "Showing activity tab - loading following activities")
+        loadFollowingActivities()
     }
     
     // OLD PROFILE FUNCTION - COMMENTED OUT (replaced by CreatorProfileManager)
@@ -1045,22 +1231,28 @@ class MainActivity : AppCompatActivity() {
     private fun updateProfileUI(connected: Boolean, fullAddress: String?, displayAddress: String?) {
         if (connected && fullAddress != null && displayAddress != null) {
             // Wallet connected - show profile details
-            profileWalletButton.text = "Disconnect Wallet"
-            walletStatusText.text = "Wallet connected successfully"
+            profileWalletButton.text = "✓ Wallet Connected"
+            walletStatusText.text = "Ready to use SwipeLaunch"
             profileDetailsCard.visibility = View.VISIBLE
             activityCard.visibility = View.VISIBLE
             
             // Update profile info
             profileWalletAddress.text = displayAddress
             
+            // Set creator address (shortened format)
+            val loginWallet = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD"
+            creatorAddress.text = "${loginWallet.take(6)}...${loginWallet.takeLast(6)}"
+            
             // Set default activity stats with random realistic numbers
             val randomLikes = (15..45).random()
             val randomPresales = (3..8).random()
             val randomFollowing = (5..15).random()
+            val randomFollowers = (25..85).random()
             
             findViewById<TextView>(R.id.profileLikesCount).text = randomLikes.toString()
             findViewById<TextView>(R.id.profilePresalesCount).text = randomPresales.toString()
             findViewById<TextView>(R.id.profileFollowingCount).text = randomFollowing.toString()
+            findViewById<TextView>(R.id.profileFollowersCount).text = randomFollowers.toString()
             
             // Load SOL balance from database
             lifecycleScope.launch {
@@ -1271,7 +1463,12 @@ class MainActivity : AppCompatActivity() {
                             symbol = token.symbol,
                             status = token.status,
                             description = token.description,
-                            creator = token.creator_wallet
+                            creator = token.creator_wallet,
+                            logoUrl = if (!token.image_url.isNullOrEmpty()) {
+                                token.image_url
+                            } else {
+                                "https://api.dicebear.com/9.x/thumbs/png?seed=${token.token_name}"
+                            }
                         )
                     }
                 }
@@ -1453,9 +1650,6 @@ class MainActivity : AppCompatActivity() {
             followingActivityData,
             onViewTokenClick = { activity ->
                 showTokenDetailPopup(activity)
-            },
-            onLikeClick = { activity ->
-                showToast("❤️ Liked ${activity.tokenInfo?.tokenName ?: "activity"}")
             }
         )
         
@@ -1675,6 +1869,9 @@ class MainActivity : AppCompatActivity() {
                 }
                 
                 android.util.Log.d("MainActivity", "Created ${followingActivityData.size} following activities")
+                if (followingActivityData.isNotEmpty()) {
+                    android.util.Log.d("MainActivity", "First activity userAvatar: ${followingActivityData[0].userAvatar}")
+                }
                 
                 // Update UI on main thread
                 runOnUiThread {
@@ -1804,7 +2001,7 @@ class MainActivity : AppCompatActivity() {
                         featuredUserAvatar.setBackgroundColor(android.graphics.Color.parseColor("#9945FF"))
                         
                         // Setup follow button
-                        val defaultWallet = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu"
+                        val defaultWallet = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD"
                         var isFollowing = followedUsers.contains(defaultWallet)
                         followFeaturedButton.text = if (isFollowing) "Following" else "Follow"
                         followFeaturedButton.setBackgroundResource(if (isFollowing) R.drawable.follow_button_following else R.drawable.follow_button_background)
@@ -1846,7 +2043,7 @@ class MainActivity : AppCompatActivity() {
                     featuredUserStats.text = "🚀 Official account • ⭐ Featured creator"
                     featuredUserAvatar.setBackgroundColor(android.graphics.Color.parseColor("#9945FF"))
                     
-                    val defaultWallet = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu"
+                    val defaultWallet = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD"
                     var isFollowing = followedUsers.contains(defaultWallet)
                     followFeaturedButton.text = if (isFollowing) "Following" else "Follow"
                     followFeaturedButton.setBackgroundColor(android.graphics.Color.parseColor(if (isFollowing) "#4CAF50" else "#9945FF"))
@@ -2178,7 +2375,7 @@ class MainActivity : AppCompatActivity() {
         android.util.Log.d("TokenCreation", "STEP 1 Supply: $supply")
         
         // Token creation uses fixed creator address - no wallet connection required
-        val FIXED_CREATOR_ADDRESS = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu"
+        val FIXED_CREATOR_ADDRESS = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD"
         android.util.Log.d("TokenCreation", "STEP 1 Using fixed creator address: $FIXED_CREATOR_ADDRESS")
         
         // Get launch type
@@ -2293,8 +2490,13 @@ class MainActivity : AppCompatActivity() {
             creatorProfileManager.addNewToken(createdToken)
             android.util.Log.d("CreatorProfile", "Added token to creator profile: ${createdToken.name} (${createdToken.symbol})")
             
-            showToast("🚀 Token added to creator profile!")
+            showToast("🚀 Token created and cached locally!")
             
+            // Database sync disabled as requested - using local cache only
+            android.util.Log.d("MyTokens", "Database sync disabled - token stored in local cache only")
+            
+            /*
+            // DATABASE SYNC DISABLED - using local cache only
             // Try to save to database in background
             lifecycleScope.launch {
                 try {
@@ -2302,7 +2504,7 @@ class MainActivity : AppCompatActivity() {
                         token_name = name,
                         symbol = symbol,
                         description = description,
-                        creator_wallet = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu", // Always use fixed creator address
+                        creator_wallet = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD", // Always use login wallet address
                         status = tokenStatus,
                         launch_price_sol = if (launchType == LaunchType.INSTANT) 0.05 else null
                     )
@@ -2327,6 +2529,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+            */
             
             // Show appropriate success dialog immediately
             runOnUiThread {
@@ -2407,7 +2610,7 @@ class MainActivity : AppCompatActivity() {
     /*
     private fun updateMyTokensDisplay() {
         val connectedWallet = walletManager.getConnectedWalletAddress()
-        val FIXED_CREATOR_ADDRESS = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu"
+        val FIXED_CREATOR_ADDRESS = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD"
         
         android.util.Log.d("MyTokens", "updateMyTokensDisplay called")
         android.util.Log.d("MyTokens", "Connected wallet: $connectedWallet")
@@ -2499,7 +2702,7 @@ class MainActivity : AppCompatActivity() {
     private suspend fun loadWalletTokensFromDatabase(walletAddress: String) {
         try {
             // Fixed creator address - only show tokens created by this specific address
-            val FIXED_CREATOR_ADDRESS = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu"
+            val FIXED_CREATOR_ADDRESS = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD"
             
             android.util.Log.d("MyTokens", "=== DATABASE LOAD: Loading tokens created by fixed address: $FIXED_CREATOR_ADDRESS ===")
             android.util.Log.d("MyTokens", "Connected wallet: $walletAddress (for context only)")
@@ -2717,14 +2920,8 @@ class MainActivity : AppCompatActivity() {
         // Set up wallet connection button
         profileWalletButton.setOnClickListener {
             if (walletManager.isWalletConnected()) {
-                // Disconnect wallet
-                lifecycleScope.launch {
-                    try {
-                        walletManager.disconnectWallet()
-                    } catch (e: Exception) {
-                        showToast("Disconnection failed: ${e.message}")
-                    }
-                }
+                // When connected, just show a toast - disconnect is handled by Sign Out button
+                showToast("Wallet is connected and ready to use")
             } else {
                 // Connect wallet
                 lifecycleScope.launch {
@@ -2737,16 +2934,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
-        // Set up connect wallet button (in profile details)
-        connectWalletButton.setOnClickListener {
-            lifecycleScope.launch {
-                try {
-                    walletManager.connectWallet()
-                } catch (e: Exception) {
-                    showToast("Connection failed: ${e.message}")
-                }
-            }
-        }
         
         // Set up disconnect wallet button (in profile details)
         disconnectWalletButton.setOnClickListener {
@@ -2794,43 +2981,75 @@ class MainActivity : AppCompatActivity() {
     
     private fun updateProfileUI(connected: Boolean, fullAddress: String?, displayAddress: String?) {
         if (connected && fullAddress != null && displayAddress != null) {
-            // Wallet connected - show profile details
-            profileWalletButton.text = "Disconnect Wallet"
-            walletStatusText.text = "Wallet connected successfully"
+            // Wallet connected - hide connection card and show profile details
+            walletConnectionCard.visibility = View.GONE
             profileDetailsCard.visibility = View.VISIBLE
             activityCard.visibility = View.VISIBLE
-            connectWalletButton.visibility = View.GONE
             disconnectWalletButton.visibility = View.VISIBLE
             
-            // Update profile info
+            // Update profile info - show wallet address (crypto-native style)
+            val loginWallet = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD"
+            profileUserName.text = "${loginWallet.take(6)}...${loginWallet.takeLast(6)}"
             profileWalletAddress.text = displayAddress
             
             // Set default activity stats with random realistic numbers
             val randomLikes = (15..45).random()
             val randomPresales = (3..8).random()
             val randomFollowing = (5..15).random()
+            val randomFollowers = (25..85).random()
             
             findViewById<TextView>(R.id.profileLikesCount).text = randomLikes.toString()
             findViewById<TextView>(R.id.profilePresalesCount).text = randomPresales.toString()
             findViewById<TextView>(R.id.profileFollowingCount).text = randomFollowing.toString()
+            findViewById<TextView>(R.id.profileFollowersCount).text = randomFollowers.toString()
             
-            // Load SOL balance from database
-            lifecycleScope.launch {
-                val solBalance = databaseService.getUserSolBalance(fullAddress)
-                runOnUiThread {
-                    profileSolBalance.text = "${String.format("%.2f", solBalance)} SOL"
-                }
-            }
+            // Set proposal status stats - fixed values
+            findViewById<TextView>(R.id.proposalLikesReceived).text = "380"
+            findViewById<TextView>(R.id.proposalInPresale).text = "4"
+            findViewById<TextView>(R.id.proposalLaunched).text = "1"
+            
+            // Set fixed SOL balance
+            profileSolBalance.text = "3.28 SOL"
             
             // Note: My tokens display is handled by CreatorProfileManager
         } else {
-            // Wallet disconnected - hide profile details but keep creator tokens visible
+            // Wallet disconnected - show connection card and hide profile details
+            walletConnectionCard.visibility = View.VISIBLE
             profileWalletButton.text = "Connect Solana Wallet"
             walletStatusText.text = "Connect your wallet to see your profile details"
             profileDetailsCard.visibility = View.GONE
             activityCard.visibility = View.GONE
-            connectWalletButton.visibility = View.VISIBLE
             disconnectWalletButton.visibility = View.GONE
+        }
+    }
+    
+    private fun loadProfileAvatar(walletAddress: String) {
+        val avatarUrl = "https://api.dicebear.com/9.x/thumbs/svg?seed=${walletAddress}"
+        
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Load SVG from URL
+                val inputStream = URL(avatarUrl).openStream()
+                val svg = SVG.getFromInputStream(inputStream)
+                
+                // Create a bitmap from the SVG with higher resolution for profile
+                val bitmap = Bitmap.createBitmap(400, 400, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                svg.renderToCanvas(canvas)
+                
+                withContext(Dispatchers.Main) {
+                    // Set the bitmap to the profile avatar ImageView
+                    val drawable = BitmapDrawable(profileAvatar.context.resources, bitmap)
+                    profileAvatar.setImageDrawable(drawable)
+                    profileAvatar.scaleType = ImageView.ScaleType.CENTER_CROP
+                    android.util.Log.d("ProfileAvatar", "Successfully loaded profile avatar for wallet: ${walletAddress.take(8)}...")
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    // Keep the gradient background as fallback
+                    android.util.Log.e("ProfileAvatar", "Error loading profile avatar: ${e.message}")
+                }
+            }
         }
     }
 }

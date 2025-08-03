@@ -1,12 +1,23 @@
 package com.anonymous.SolanaMobileApp
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.caverock.androidsvg.SVG
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.URL
 
 data class LikedTokenInfo(
     val id: Int,
@@ -14,7 +25,8 @@ data class LikedTokenInfo(
     val symbol: String,
     val status: String,
     val description: String?,
-    val creator: String
+    val creator: String,
+    val logoUrl: String = ""
 )
 
 class LikedTokenAdapter(
@@ -23,7 +35,7 @@ class LikedTokenAdapter(
 ) : RecyclerView.Adapter<LikedTokenAdapter.LikedTokenViewHolder>() {
 
     class LikedTokenViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val tokenIcon: View = itemView.findViewById(R.id.tokenIcon)
+        val tokenIcon: ImageView = itemView.findViewById(R.id.tokenIcon)
         val tokenName: TextView = itemView.findViewById(R.id.tokenName)
         val tokenSymbol: TextView = itemView.findViewById(R.id.tokenSymbol)
         val tokenStatus: TextView = itemView.findViewById(R.id.tokenStatus)
@@ -43,10 +55,26 @@ class LikedTokenAdapter(
         holder.tokenSymbol.text = token.symbol
         holder.tokenStatus.text = token.status.uppercase()
         
-        // Set icon color based on token name
-        val colors = listOf("#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#FDA7DF")
-        val colorIndex = token.name.hashCode() % colors.size
-        holder.tokenIcon.setBackgroundColor(Color.parseColor(colors[kotlin.math.abs(colorIndex)]))
+        // Load token icon image with SVG support
+        if (!token.logoUrl.isNullOrEmpty()) {
+            if (token.logoUrl.contains(".svg") || token.logoUrl.contains("/svg?")) {
+                // Load SVG using custom loader
+                loadSvgImage(token.logoUrl, holder.tokenIcon)
+            } else {
+                // Load regular image using Glide
+                Glide.with(holder.itemView.context)
+                    .load(token.logoUrl)
+                    .centerCrop()
+                    .placeholder(android.R.color.darker_gray)
+                    .error(android.R.color.holo_red_light)
+                    .into(holder.tokenIcon)
+            }
+        } else {
+            // Set icon color based on token name if no image
+            val colors = listOf("#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#FDA7DF")
+            val colorIndex = token.name.hashCode() % colors.size
+            holder.tokenIcon.setBackgroundColor(Color.parseColor(colors[kotlin.math.abs(colorIndex)]))
+        }
         
         // Set status color
         val statusColor = when (token.status.lowercase()) {
@@ -64,4 +92,31 @@ class LikedTokenAdapter(
     }
 
     override fun getItemCount(): Int = likedTokens.size
+    
+    private fun loadSvgImage(svgUrl: String, imageView: ImageView) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Load SVG from URL
+                val inputStream = URL(svgUrl).openStream()
+                val svg = SVG.getFromInputStream(inputStream)
+                
+                // Create a bitmap from the SVG
+                val bitmap = Bitmap.createBitmap(400, 400, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                svg.renderToCanvas(canvas)
+                
+                withContext(Dispatchers.Main) {
+                    // Set the bitmap to the ImageView
+                    val drawable = BitmapDrawable(imageView.context.resources, bitmap)
+                    imageView.setImageDrawable(drawable)
+                    imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    // Set placeholder on error
+                    imageView.setBackgroundColor(imageView.context.getColor(android.R.color.holo_red_light))
+                }
+            }
+        }
+    }
 }

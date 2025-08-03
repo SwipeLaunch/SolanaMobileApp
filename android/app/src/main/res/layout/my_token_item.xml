@@ -3,26 +3,36 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    android:layout_marginBottom="12dp"
+    android:layout_marginHorizontal="4dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    android:backgroundTint="#FFFFFF">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp">
+        android:padding="16dp"
+        android:background="@drawable/ios_card_background">
 
-        <!-- Token Icon -->
-        <TextView
-            android:id="@+id/tokenIcon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginEnd="12dp"
-            android:background="@android:drawable/btn_default"
-            android:gravity="center"
-            android:text="🪙"
-            android:textSize="20sp" />
+        <!-- Token Icon with iOS-style circular container -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="16dp"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="0dp"
+            android:backgroundTint="#E4E6EA">
+
+            <ImageView
+                android:id="@+id/tokenIcon"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:padding="8dp" />
+
+        </androidx.cardview.widget.CardView>
 
         <!-- Token Info -->
         <LinearLayout
@@ -42,19 +52,21 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Token Name"
-                    android:textColor="#1a1a1a"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:textColor="#1C1C1E"
+                    android:textSize="17sp"
+                    android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:id="@+id/tokenStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="#10B98120"
-                    android:padding="4dp"
+                    android:background="@drawable/ios_status_badge"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
                     android:text="Active"
-                    android:textColor="#059669"
-                    android:textSize="10sp" />
+                    android:textColor="#34C759"
+                    android:textSize="12sp"
+                    android:fontFamily="sans-serif-medium" />
 
             </LinearLayout>
 
@@ -62,18 +74,21 @@
                 android:id="@+id/tokenSymbol"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
                 android:layout_marginBottom="4dp"
                 android:text="SYMBOL"
-                android:textColor="#666"
-                android:textSize="12sp" />
+                android:textColor="#8E8E93"
+                android:textSize="15sp"
+                android:fontFamily="sans-serif" />
 
             <TextView
                 android:id="@+id/tokenSupply"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Supply: 1B"
-                android:textColor="#666"
-                android:textSize="12sp" />
+                android:textColor="#8E8E93"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif" />
 
         </LinearLayout>
 
@@ -88,7 +103,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="32dp"
                 android:layout_marginBottom="4dp"
-                android:backgroundTint="#9945FF"
+                android:backgroundTint="#1877F2"
                 android:minWidth="60dp"
                 android:text="View"
                 android:textColor="#ffffff"
@@ -98,7 +113,7 @@
                 android:id="@+id/chatLinkButton"
                 android:layout_width="wrap_content"
                 android:layout_height="32dp"
-                android:backgroundTint="#14B8A6"
+                android:backgroundTint="#42A5F5"
                 android:minWidth="60dp"
                 android:text="Chat"
                 android:textColor="#ffffff"
