@@ -125,13 +125,14 @@ class MainActivity : AppCompatActivity() {
     
     // Image handling
     private var currentImageUri: Uri? = null
+    private var currentImageUrl: String? = null
     private var tempImageUri: Uri? = null
     
     // Created tokens storage (in real app, this would be from database/blockchain)
     private val createdTokens = mutableListOf<CreatedTokenInfo>()
     
     // Wallet balance tracking
-    private var currentWalletBalance = 5.0 // Start with 5 SOL for demo
+    private var currentWalletBalance = 13.72 // Start with 13.72 SOL for demo
     
     // Activity result launchers
     private val takePictureLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
@@ -1177,7 +1178,6 @@ class MainActivity : AppCompatActivity() {
         activityPage.visibility = View.GONE
         
         // Ensure we start in proposal mode
-        android.util.Log.d("TokenCreation", "CREATE TAB: Ensuring proposal mode is selected")
         launchTypeGroup.clearCheck()
         launchTypeGroup.check(R.id.presaleLaunchRadio)
         updateUIForCommunityPresale()
@@ -1255,8 +1255,8 @@ class MainActivity : AppCompatActivity() {
     */
     
     private fun updateWalletBalance() {
-        // Mock wallet balance - in real app, get from wallet
-        val balance = if (walletManager.isWalletConnected()) "1.25 SOL" else "0.00 SOL"
+        // Use current wallet balance - matches profile page
+        val balance = if (walletManager.isWalletConnected()) "${String.format("%.2f", currentWalletBalance)} SOL" else "0.00 SOL"
         walletBalanceText.text = balance
     }
     
@@ -2157,6 +2157,12 @@ class MainActivity : AppCompatActivity() {
             selectImageFromGallery()
         }
         
+        // Add URL image button
+        findViewById<Button>(R.id.urlImageButton).setOnClickListener {
+            android.util.Log.d("URLImageButton", "URL button clicked!")
+            showUrlInputDialog()
+        }
+        
         removeImageButton.setOnClickListener {
             removeSelectedImage()
         }
@@ -2294,40 +2300,87 @@ class MainActivity : AppCompatActivity() {
     
     private fun removeSelectedImage() {
         currentImageUri = null
+        currentImageUrl = null
         selectedImage.visibility = View.GONE
         imagePlaceholder.visibility = View.VISIBLE
         removeImageButton.visibility = View.GONE
         selectedImage.setImageURI(null)
     }
     
-    private fun createToken() {
-        android.util.Log.d("TokenCreation", "=== STEP 1: createToken() called ===")
+    private fun showUrlInputDialog() {
+        android.util.Log.d("URLImageButton", "showUrlInputDialog called")
+        val dialogView = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dpToPx(24), dpToPx(16), dpToPx(24), dpToPx(16))
+        }
         
+        val urlInput = EditText(this).apply {
+            hint = "Enter image URL (https://...)"
+            setText(currentImageUrl ?: "")
+            inputType = android.text.InputType.TYPE_TEXT_VARIATION_URI
+            background = resources.getDrawable(android.R.drawable.edit_text, null)
+            setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12))
+        }
+        
+        dialogView.addView(urlInput)
+        
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Enter Image URL")
+            .setView(dialogView)
+            .setPositiveButton("Load") { _, _ ->
+                val url = urlInput.text.toString().trim()
+                if (url.isNotEmpty() && (url.startsWith("http://") || url.startsWith("https://"))) {
+                    loadImageFromUrl(url)
+                } else {
+                    showToast("Please enter a valid URL")
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun loadImageFromUrl(url: String) {
+        android.util.Log.d("URLImageButton", "loadImageFromUrl called with URL: $url")
+        currentImageUrl = url
+        currentImageUri = null // Clear any file URI
+        
+        // Use Glide to load the image
+        try {
+            com.bumptech.glide.Glide.with(this)
+                .load(url)
+                .placeholder(android.R.color.darker_gray)
+                .error(android.R.color.holo_red_light)
+                .into(selectedImage)
+            
+            selectedImage.visibility = View.VISIBLE
+            imagePlaceholder.visibility = View.GONE
+            removeImageButton.visibility = View.VISIBLE
+            
+            showToast("✅ Image loaded from URL")
+        } catch (e: Exception) {
+            showToast("Failed to load image from URL")
+            android.util.Log.e("ImageLoad", "Error loading image from URL: ${e.message}")
+        }
+    }
+    
+    private fun createToken() {
         // Validate inputs
         val name = tokenNameInput.text?.toString()?.trim()
         val symbol = tokenSymbolInput.text?.toString()?.trim()?.uppercase()
         val description = tokenDescriptionInput.text?.toString()?.trim()
         val chatLink = tokenChatLinkInput.text?.toString()?.trim()
         
-        android.util.Log.d("TokenCreation", "STEP 1 Input validation:")
-        android.util.Log.d("TokenCreation", "  Name: '$name'")
-        android.util.Log.d("TokenCreation", "  Symbol: '$symbol'")
-        android.util.Log.d("TokenCreation", "  Description: '$description'")
-        
         if (name.isNullOrEmpty()) {
-            android.util.Log.d("TokenCreation", "STEP 1 FAILED: Name is empty")
             showToast("Please enter token name")
             return
         }
         
         if (symbol.isNullOrEmpty()) {
-            android.util.Log.d("TokenCreation", "STEP 1 FAILED: Symbol is empty")
             showToast("Please enter token symbol")
             return
         }
         
         if (description.isNullOrEmpty()) {
-            android.util.Log.d("TokenCreation", "STEP 1 FAILED: Description is empty")
             showToast("Please enter token description")
             return
         }
@@ -2372,13 +2425,9 @@ class MainActivity : AppCompatActivity() {
             chatLink = if (chatLink.isNullOrEmpty()) null else chatLink
         )
         
-        android.util.Log.d("TokenCreation", "STEP 1 SUCCESS: All validations passed")
-        
         // Show creation in progress
         createTokenButton.isEnabled = false
         createTokenButton.text = "Creating Token..."
-        
-        android.util.Log.d("TokenCreation", "=== STEP 2: Starting simulation ===")
         
         // Simulate token creation (in real app, this would call Solana Mobile Stack APIs)
         lifecycleScope.launch {
@@ -2453,6 +2502,7 @@ class MainActivity : AppCompatActivity() {
                 launchType = launchType,
                 tokenAddress = displayAddress,
                 chatLink = chatLink,
+                imageUrl = currentImageUrl, // Save the image URL
                 status = tokenStatus
             )
             
@@ -2469,7 +2519,6 @@ class MainActivity : AppCompatActivity() {
             showToast("🚀 Token created and cached locally!")
             
             // Database sync disabled as requested - using local cache only
-            android.util.Log.d("MyTokens", "Database sync disabled - token stored in local cache only")
             
             /*
             // DATABASE SYNC DISABLED - using local cache only
@@ -2651,6 +2700,7 @@ class MainActivity : AppCompatActivity() {
                     launchType = if (dbToken.status == "presale" || dbToken.status == "proposal") LaunchType.PRESALE else LaunchType.INSTANT,
                     tokenAddress = dbToken.token_mint_address ?: "Unknown",
                     chatLink = "https://discord.gg/${dbToken.symbol.lowercase()}",
+                    imageUrl = dbToken.image_url, // Use database image URL
                     status = status
                 )
             }
@@ -2711,6 +2761,7 @@ class MainActivity : AppCompatActivity() {
                         launchType = if (dbToken.status == "presale" || dbToken.status == "proposal") LaunchType.PRESALE else LaunchType.INSTANT,
                         tokenAddress = dbToken.token_mint_address ?: "Unknown",
                         chatLink = "https://discord.gg/${dbToken.symbol.lowercase()}",
+                        imageUrl = dbToken.image_url, // Use database image URL
                         status = dbToken.status.replaceFirstChar { it.uppercase() }
                     )
                 }
@@ -2951,10 +3002,28 @@ class MainActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(dpToPx(60), dpToPx(60))
             scaleType = ImageView.ScaleType.CENTER_CROP
             
-            // Set colored background based on token name
-            val colors = listOf("#9945FF", "#14B8A6", "#FF6B35", "#34C759", "#007AFF")
-            val colorIndex = kotlin.math.abs(token.name.hashCode()) % colors.size
-            setBackgroundColor(android.graphics.Color.parseColor(colors[colorIndex]))
+            // Load image from URL if available, otherwise use colored background
+            if (!token.imageUrl.isNullOrEmpty()) {
+                try {
+                    com.bumptech.glide.Glide.with(this@MainActivity)
+                        .load(token.imageUrl)
+                        .placeholder(android.R.color.darker_gray)
+                        .error(android.R.color.holo_red_light)
+                        .circleCrop() // Make it circular like other tokens
+                        .into(this)
+                } catch (e: Exception) {
+                    // Fallback to colored background if image loading fails
+                    val colors = listOf("#9945FF", "#14B8A6", "#FF6B35", "#34C759", "#007AFF")
+                    val colorIndex = kotlin.math.abs(token.name.hashCode()) % colors.size
+                    setBackgroundColor(android.graphics.Color.parseColor(colors[colorIndex]))
+                    android.util.Log.e("RecentTokenCard", "Failed to load image: ${e.message}")
+                }
+            } else {
+                // Set colored background based on token name as fallback
+                val colors = listOf("#9945FF", "#14B8A6", "#FF6B35", "#34C759", "#007AFF")
+                val colorIndex = kotlin.math.abs(token.name.hashCode()) % colors.size
+                setBackgroundColor(android.graphics.Color.parseColor(colors[colorIndex]))
+            }
         }
         
         // Token Name
@@ -3132,7 +3201,7 @@ class MainActivity : AppCompatActivity() {
             findViewById<TextView>(R.id.proposalLaunched).text = "1"
             
             // Set fixed SOL balance
-            profileSolBalance.text = "3.28 SOL"
+            profileSolBalance.text = "13.72 SOL"
             
             // Note: My tokens display is handled by CreatorProfileManager
         } else {

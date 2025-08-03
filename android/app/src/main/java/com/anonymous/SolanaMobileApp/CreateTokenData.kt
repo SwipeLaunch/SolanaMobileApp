@@ -33,6 +33,7 @@ data class CreatedTokenInfo(
     val launchType: LaunchType,
     val tokenAddress: String,
     val chatLink: String? = null,
+    val imageUrl: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val status: String = "Active" // Active, Voting, Presale, etc.
 )
