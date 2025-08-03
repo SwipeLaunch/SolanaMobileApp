@@ -637,7 +637,13 @@ class MainActivity : AppCompatActivity() {
                         endTime = currentTime + (7 * 24 * 60 * 60 * 1000L), // 7 days from now
                         creatorAddress = dbToken.creator_wallet,
                         tokenAddress = dbToken.token_mint_address ?: dbToken.creator_wallet,
-                        logoUrl = dbToken.image_url ?: "" // Add image URL from database, empty string if null
+                        // Use image URL from database, or generate random Dicebear avatar
+                        logoUrl = if (!dbToken.image_url.isNullOrEmpty()) {
+                            dbToken.image_url
+                        } else {
+                            // Generate random Dicebear avatar using token name as seed
+                            "https://api.dicebear.com/9.x/thumbs/png?seed=${dbToken.token_name}"
+                        }
                     )
                 })
                 
@@ -663,7 +669,8 @@ class MainActivity : AppCompatActivity() {
             PresaleTokenData("ps1", "Sample Presale", "SAMPLE", "🚀 No presale tokens found in database", 
                             1_000_000_000L, 25.0, System.currentTimeMillis(), 
                             System.currentTimeMillis() + (3 * 24 * 60 * 60 * 1000L), 
-                            "SampleCreator", "SampleAddr")
+                            "SampleCreator", "SampleAddr", 
+                            "https://api.dicebear.com/9.x/thumbs/png?seed=SamplePresale")
         )
         refreshPresaleAdapter()
     }
@@ -1045,6 +1052,15 @@ class MainActivity : AppCompatActivity() {
             
             // Update profile info
             profileWalletAddress.text = displayAddress
+            
+            // Set default activity stats with random realistic numbers
+            val randomLikes = (15..45).random()
+            val randomPresales = (3..8).random()
+            val randomFollowing = (5..15).random()
+            
+            findViewById<TextView>(R.id.profileLikesCount).text = randomLikes.toString()
+            findViewById<TextView>(R.id.profilePresalesCount).text = randomPresales.toString()
+            findViewById<TextView>(R.id.profileFollowingCount).text = randomFollowing.toString()
             
             // Load SOL balance from database
             lifecycleScope.launch {
@@ -2788,6 +2804,15 @@ class MainActivity : AppCompatActivity() {
             
             // Update profile info
             profileWalletAddress.text = displayAddress
+            
+            // Set default activity stats with random realistic numbers
+            val randomLikes = (15..45).random()
+            val randomPresales = (3..8).random()
+            val randomFollowing = (5..15).random()
+            
+            findViewById<TextView>(R.id.profileLikesCount).text = randomLikes.toString()
+            findViewById<TextView>(R.id.profilePresalesCount).text = randomPresales.toString()
+            findViewById<TextView>(R.id.profileFollowingCount).text = randomFollowing.toString()
             
             // Load SOL balance from database
             lifecycleScope.launch {
