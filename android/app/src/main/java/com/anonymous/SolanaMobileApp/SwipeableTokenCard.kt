@@ -5,14 +5,25 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
+import com.bumptech.glide.Glide
+import com.caverock.androidsvg.SVG
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.URL
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -32,7 +43,7 @@ class SwipeableTokenCard @JvmOverloads constructor(
     private lateinit var creator: TextView
     private lateinit var description: TextView
     private lateinit var likes: TextView
-    private lateinit var imagePlaceholder: View
+    private lateinit var tokenImage: ImageView
     private lateinit var likeOverlay: View
     private lateinit var passOverlay: View
     private lateinit var likeButton: Button
@@ -82,7 +93,7 @@ class SwipeableTokenCard @JvmOverloads constructor(
         creator = frontCard.findViewById(R.id.creator)
         description = frontCard.findViewById(R.id.description)
         likes = frontCard.findViewById(R.id.likes)
-        imagePlaceholder = frontCard.findViewById(R.id.imagePlaceholder)
+        tokenImage = frontCard.findViewById(R.id.tokenImage)
         likeButton = frontCard.findViewById(R.id.likeButton)
         dislikeButton = frontCard.findViewById(R.id.dislikeButton)
         infoButton = frontCard.findViewById(R.id.infoButton)
@@ -107,6 +118,13 @@ class SwipeableTokenCard @JvmOverloads constructor(
         dislikeButton.setOnClickListener { dislikeAction() }
         infoButton.setOnClickListener { flipCard() }
         backButton.setOnClickListener { flipCard() }
+        
+        // Allow clicking anywhere on the back card to flip back to front
+        backCard.setOnClickListener { 
+            if (isFlipped) {
+                flipCard()
+            }
+        }
 
         // Set up gesture detector
         gestureDetector = GestureDetector(context, SwipeGestureListener())
@@ -118,6 +136,33 @@ class SwipeableTokenCard @JvmOverloads constructor(
         creator.text = "by @${token.creator}"
         description.text = token.description
         likes.text = "❤️ ${token.likes}"
+        
+        // Load token image
+        android.util.Log.d("SwipeableTokenCard", "Setting token data for: ${token.name}")
+        android.util.Log.d("SwipeableTokenCard", "Image URL: ${token.imageUrl}")
+        
+        if (!token.imageUrl.isNullOrEmpty()) {
+            android.util.Log.d("SwipeableTokenCard", "Loading image from URL: ${token.imageUrl}")
+            // Check if it's an SVG image
+            if (token.imageUrl.contains(".svg") || token.imageUrl.contains("/svg?")) {
+                android.util.Log.d("SwipeableTokenCard", "Detected SVG image, using custom loader")
+                // Load SVG using custom loader
+                loadSvgImage(token.imageUrl)
+            } else {
+                android.util.Log.d("SwipeableTokenCard", "Loading regular image with Glide")
+                // Load regular image using Glide
+                Glide.with(context)
+                    .load(token.imageUrl)
+                    .centerCrop()
+                    .placeholder(R.color.light_gray)
+                    .error(R.color.light_gray)
+                    .into(tokenImage)
+            }
+        } else {
+            android.util.Log.d("SwipeableTokenCard", "No image URL found, setting placeholder")
+            // Set default placeholder if no image URL
+            tokenImage.setBackgroundColor(context.getColor(android.R.color.darker_gray))
+        }
         
         // Set back card data
         creatorNameBack.text = "@${token.creator}"
@@ -310,5 +355,42 @@ class SwipeableTokenCard @JvmOverloads constructor(
             .start()
             
         isFlipped = !isFlipped
+    }
+    
+    private fun loadSvgImage(svgUrl: String) {
+        android.util.Log.d("SwipeableTokenCard", "Starting SVG load for URL: $svgUrl")
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                android.util.Log.d("SwipeableTokenCard", "Opening input stream for SVG")
+                // Load SVG from URL
+                val inputStream = URL(svgUrl).openStream()
+                android.util.Log.d("SwipeableTokenCard", "Parsing SVG from input stream")
+                val svg = SVG.getFromInputStream(inputStream)
+                
+                android.util.Log.d("SwipeableTokenCard", "Creating bitmap for SVG rendering")
+                // Create a bitmap from the SVG
+                val bitmap = Bitmap.createBitmap(400, 400, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                android.util.Log.d("SwipeableTokenCard", "Rendering SVG to canvas")
+                svg.renderToCanvas(canvas)
+                
+                withContext(Dispatchers.Main) {
+                    android.util.Log.d("SwipeableTokenCard", "Setting SVG bitmap to ImageView")
+                    // Set the bitmap to the ImageView
+                    val drawable = BitmapDrawable(context.resources, bitmap)
+                    tokenImage.setImageDrawable(drawable)
+                    tokenImage.scaleType = ImageView.ScaleType.CENTER_CROP
+                    android.util.Log.d("SwipeableTokenCard", "SVG image successfully loaded!")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SwipeableTokenCard", "Error loading SVG: ${e.message}")
+                android.util.Log.e("SwipeableTokenCard", "SVG error details: ${e.stackTraceToString()}")
+                withContext(Dispatchers.Main) {
+                    // Set placeholder on error
+                    tokenImage.setBackgroundColor(context.getColor(R.color.light_gray))
+                    android.util.Log.d("SwipeableTokenCard", "Set error placeholder for SVG")
+                }
+            }
+        }
     }
 }

@@ -1,12 +1,23 @@
 package com.anonymous.SolanaMobileApp
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.caverock.androidsvg.SVG
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.URL
 
 class PresaleAdapter(
     private val presaleTokens: List<PresaleTokenData>,
@@ -24,7 +35,7 @@ class PresaleAdapter(
         val hardCap: TextView = itemView.findViewById(R.id.hardCap)
         val timeRemaining: TextView = itemView.findViewById(R.id.timeRemaining)
         val buyButton: Button = itemView.findViewById(R.id.buyButton)
-        val tokenLogo: View = itemView.findViewById(R.id.tokenLogo)
+        val tokenLogo: ImageView = itemView.findViewById(R.id.tokenLogo)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PresaleViewHolder {
@@ -38,6 +49,26 @@ class PresaleAdapter(
         
         holder.tokenName.text = token.name
         holder.tokenSymbol.text = token.symbol
+        
+        // Load token image
+        if (!token.logoUrl.isNullOrEmpty()) {
+            // Check if it's an SVG image
+            if (token.logoUrl.contains(".svg") || token.logoUrl.contains("/svg?")) {
+                // Load SVG using custom loader
+                loadSvgImage(token.logoUrl, holder.tokenLogo)
+            } else {
+                // Load regular image using Glide
+                Glide.with(holder.itemView.context)
+                    .load(token.logoUrl)
+                    .centerCrop()
+                    .placeholder(R.color.light_gray)
+                    .error(R.color.light_gray)
+                    .into(holder.tokenLogo)
+            }
+        } else {
+            // Set default placeholder if no image URL
+            holder.tokenLogo.setBackgroundColor(holder.itemView.context.getColor(android.R.color.darker_gray))
+        }
         
         // Show tokens per SOL (how many tokens you get for 1 SOL)
         val tokensPerSol = token.getTokensPerSol()
@@ -85,4 +116,31 @@ class PresaleAdapter(
     }
 
     override fun getItemCount(): Int = presaleTokens.size
+    
+    private fun loadSvgImage(svgUrl: String, imageView: ImageView) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Load SVG from URL
+                val inputStream = URL(svgUrl).openStream()
+                val svg = SVG.getFromInputStream(inputStream)
+                
+                // Create a bitmap from the SVG
+                val bitmap = Bitmap.createBitmap(400, 400, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                svg.renderToCanvas(canvas)
+                
+                withContext(Dispatchers.Main) {
+                    // Set the bitmap to the ImageView
+                    val drawable = BitmapDrawable(imageView.context.resources, bitmap)
+                    imageView.setImageDrawable(drawable)
+                    imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    // Set placeholder on error
+                    imageView.setBackgroundColor(imageView.context.getColor(R.color.light_gray))
+                }
+            }
+        }
+    }
 }
