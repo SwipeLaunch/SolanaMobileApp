@@ -587,7 +587,63 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- Creator Tokens Section -->
+        <!-- Recently Created Section -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:text="✨ Recently Created"
+                    android:textColor="#1C1C1E"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <!-- Recent Tokens Horizontal Scroll -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/recentTokensContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <!-- Recent token items will be added here dynamically -->
+
+                    </LinearLayout>
+
+                </HorizontalScrollView>
+
+                <!-- Empty State for Recent Tokens -->
+                <TextView
+                    android:id="@+id/recentTokensEmptyState"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:gravity="center"
+                    android:text="No recent tokens created"
+                    android:textColor="#8E8E93"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Creator Tokens Section (Collapsible) -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -602,10 +658,22 @@
                 android:padding="16dp">
 
                 <LinearLayout
+                    android:id="@+id/proposalGalleryHeader"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
+                    android:layout_marginBottom="12dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:id="@+id/expandCollapseIcon"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="▼"
+                        android:textSize="16sp"
+                        android:textColor="#8E8E93"
+                        android:layout_marginEnd="8dp" />
 
                     <TextView
                         android:layout_width="0dp"
@@ -630,24 +698,32 @@
 
                 </LinearLayout>
 
-                <!-- Hidden elements needed by code -->
-                <TextView
-                    android:id="@+id/creatorAddress"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:visibility="gone" />
-                
-                <TextView
-                    android:id="@+id/lastUpdated"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:visibility="gone" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/creatorTokensRecyclerView"
+                <!-- Collapsible Content Container -->
+                <LinearLayout
+                    android:id="@+id/proposalGalleryContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false" />
+                    android:orientation="vertical"
+                    android:visibility="visible">
+
+                    <!-- Hidden elements needed by code -->
+                    <TextView
+                        android:id="@+id/creatorAddress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone" />
+                    
+                    <TextView
+                        android:id="@+id/lastUpdated"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/creatorTokensRecyclerView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
 
                 <!-- Empty State -->
                 <LinearLayout
@@ -705,6 +781,8 @@
                         android:text="Loading creator tokens..."
                         android:textColor="#666"
                         android:textSize="14sp" />
+
+                </LinearLayout>
 
                 </LinearLayout>
 

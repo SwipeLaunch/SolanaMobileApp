@@ -235,21 +235,11 @@ class MainActivity : AppCompatActivity() {
         presaleRecyclerView.layoutManager = LinearLayoutManager(this)
         presaleRecyclerView.adapter = presaleAdapter
         
-        // Add one sample token for testing
-        if (createdTokens.isEmpty()) {
-            createdTokens.add(
-                CreatedTokenInfo(
-                    name = "Moon Token",
-                    symbol = "MOON",
-                    description = "To the moon!",
-                    supply = 1_000_000_000L,
-                    launchType = LaunchType.PRESALE,
-                    tokenAddress = "SampleAddr123",
-                    chatLink = "https://t.me/moontoken",
-                    status = "Voting"
-                )
-            )
-        }
+        // Don't add sample tokens - let user create their own
+        // Commenting out sample token to avoid confusion
+        // if (createdTokens.isEmpty()) {
+        //     createdTokens.add(sample token...)
+        // }
         
         // Old profile setup removed - now using CreatorProfileManager
         
@@ -321,34 +311,8 @@ class MainActivity : AppCompatActivity() {
             databaseService = databaseService
         )
         
-        // Add some sample tokens for testing if cache is empty
-        if (createdTokens.isEmpty()) {
-            val sampleToken1 = CreatedTokenInfo(
-                name = "TestCoin",
-                symbol = "TEST",
-                description = "A test token for display testing",
-                supply = 1_000_000_000L,
-                launchType = LaunchType.INSTANT,
-                tokenAddress = "Test123...ABC",
-                chatLink = "https://discord.gg/test",
-                status = "Active"
-            )
-            
-            val sampleToken2 = CreatedTokenInfo(
-                name = "DemoToken",
-                symbol = "DEMO",
-                description = "Demo token for UI testing",
-                supply = 500_000_000L,
-                launchType = LaunchType.PRESALE,
-                tokenAddress = "Demo456...XYZ",
-                chatLink = "https://discord.gg/demo",
-                status = "Proposal"
-            )
-            
-            createdTokens.add(sampleToken1)
-            createdTokens.add(sampleToken2)
-            android.util.Log.d("MainActivity", "Added 2 sample tokens for testing")
-        }
+        // Don't add sample tokens anymore - let user create real tokens
+        // Sample tokens removed to avoid confusion
         
         // Pass existing cached tokens to the manager
         createdTokens.forEach { token ->
@@ -1181,6 +1145,12 @@ class MainActivity : AppCompatActivity() {
         presalePage.visibility = View.GONE
         leaderboardPage.visibility = View.GONE
         createTokenPage.visibility = View.GONE
+        
+        // Setup collapsible proposal gallery
+        setupCollapsibleProposalGallery()
+        
+        // Load recently created tokens
+        loadRecentlyCreatedTokens()
         activityPage.visibility = View.GONE
         
         // Refresh creator tokens when profile tab is shown
@@ -2486,9 +2456,15 @@ class MainActivity : AppCompatActivity() {
                 status = tokenStatus
             )
             
-            // Add to creator profile manager for immediate display
+            // Add to both lists for immediate display
+            createdTokens.add(0, createdToken) // Add to beginning of list
             creatorProfileManager.addNewToken(createdToken)
             android.util.Log.d("CreatorProfile", "Added token to creator profile: ${createdToken.name} (${createdToken.symbol})")
+            
+            // Refresh the recently created section
+            if (profilePage.visibility == View.VISIBLE) {
+                loadRecentlyCreatedTokens()
+            }
             
             showToast("🚀 Token created and cached locally!")
             
@@ -2912,6 +2888,153 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    private fun setupCollapsibleProposalGallery() {
+        val header = profilePage.findViewById<LinearLayout>(R.id.proposalGalleryHeader)
+        val content = profilePage.findViewById<LinearLayout>(R.id.proposalGalleryContent)
+        val expandIcon = profilePage.findViewById<TextView>(R.id.expandCollapseIcon)
+        
+        header?.setOnClickListener {
+            if (content?.visibility == View.VISIBLE) {
+                content.visibility = View.GONE
+                expandIcon?.text = "▶"
+            } else {
+                content?.visibility = View.VISIBLE
+                expandIcon?.text = "▼"
+            }
+        }
+    }
+    
+    private fun loadRecentlyCreatedTokens() {
+        val recentTokensContainer = profilePage.findViewById<LinearLayout>(R.id.recentTokensContainer)
+        val emptyState = profilePage.findViewById<TextView>(R.id.recentTokensEmptyState)
+        
+        recentTokensContainer?.removeAllViews()
+        
+        // Get recently created tokens (last 5)
+        val recentTokens = createdTokens.takeLast(5).reversed()
+        
+        if (recentTokens.isEmpty()) {
+            emptyState?.visibility = View.VISIBLE
+            recentTokensContainer?.visibility = View.GONE
+        } else {
+            emptyState?.visibility = View.GONE
+            recentTokensContainer?.visibility = View.VISIBLE
+            
+            // Create token cards for each recent token
+            recentTokens.forEach { token: CreatedTokenInfo ->
+                val tokenCard = createRecentTokenCard(token)
+                recentTokensContainer?.addView(tokenCard)
+            }
+        }
+    }
+    
+    private fun createRecentTokenCard(token: CreatedTokenInfo): View {
+        val cardView = androidx.cardview.widget.CardView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                dpToPx(120),
+                dpToPx(140)
+            ).apply {
+                marginEnd = dpToPx(12)
+            }
+            radius = dpToPx(12).toFloat()
+            cardElevation = dpToPx(2).toFloat()
+        }
+        
+        val linearLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = android.view.Gravity.CENTER
+            setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
+        }
+        
+        // Token Icon
+        val tokenIcon = ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dpToPx(60), dpToPx(60))
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            
+            // Set colored background based on token name
+            val colors = listOf("#9945FF", "#14B8A6", "#FF6B35", "#34C759", "#007AFF")
+            val colorIndex = kotlin.math.abs(token.name.hashCode()) % colors.size
+            setBackgroundColor(android.graphics.Color.parseColor(colors[colorIndex]))
+        }
+        
+        // Token Name
+        val tokenName = TextView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dpToPx(8)
+            }
+            text = token.name
+            textSize = 14f
+            setTextColor(android.graphics.Color.parseColor("#1C1C1E"))
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            gravity = android.view.Gravity.CENTER
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+        
+        // Token Symbol
+        val tokenSymbol = TextView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            text = token.symbol
+            textSize = 12f
+            setTextColor(android.graphics.Color.parseColor("#8E8E93"))
+            gravity = android.view.Gravity.CENTER
+        }
+        
+        // Status Badge
+        val statusBadge = TextView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dpToPx(4)
+            }
+            text = token.status
+            textSize = 10f
+            setPadding(dpToPx(8), dpToPx(2), dpToPx(8), dpToPx(2))
+            gravity = android.view.Gravity.CENTER
+            
+            when (token.status) {
+                "Active" -> {
+                    setBackgroundColor(android.graphics.Color.parseColor("#34C75920"))
+                    setTextColor(android.graphics.Color.parseColor("#34C759"))
+                }
+                "Voting" -> {
+                    setBackgroundColor(android.graphics.Color.parseColor("#FF6B3520"))
+                    setTextColor(android.graphics.Color.parseColor("#FF6B35"))
+                }
+                else -> {
+                    setBackgroundColor(android.graphics.Color.parseColor("#8E8E9320"))
+                    setTextColor(android.graphics.Color.parseColor("#8E8E93"))
+                }
+            }
+        }
+        
+        linearLayout.addView(tokenIcon)
+        linearLayout.addView(tokenName)
+        linearLayout.addView(tokenSymbol)
+        linearLayout.addView(statusBadge)
+        
+        cardView.addView(linearLayout)
+        
+        // Add click listener
+        cardView.setOnClickListener {
+            showToast("View ${token.name} details")
+        }
+        
+        return cardView
+    }
+    
+    private fun dpToPx(dp: Int): Int {
+        val density = resources.displayMetrics.density
+        return (dp * density).toInt()
+    }
+
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
