@@ -29,10 +29,10 @@
 
         </LinearLayout>
 
-        <!-- Profile content -->
+        <!-- Creator Profile content -->
         <include
             android:id="@+id/profilePage"
-            layout="@layout/profile_page"
+            layout="@layout/creator_profile_page"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone" />

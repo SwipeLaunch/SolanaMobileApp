@@ -6,7 +6,7 @@
         android:title="Discover" />
     <item
         android:id="@+id/nav_superstar"
-        android:icon="@android:drawable/btn_star_big_on"
+        android:icon="@android:drawable/ic_menu_agenda"
         android:title="Presale" />
     <item
         android:id="@+id/nav_create"

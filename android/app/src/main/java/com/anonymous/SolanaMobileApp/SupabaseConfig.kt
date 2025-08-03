@@ -13,5 +13,7 @@ object SupabaseConfig {
         supabaseKey = SUPABASE_ANON_KEY
     ) {
         install(Postgrest)
+        // Note: Using default configuration for now due to emulator network issues
+        // In production, would add custom timeout and retry logic
     }
 }

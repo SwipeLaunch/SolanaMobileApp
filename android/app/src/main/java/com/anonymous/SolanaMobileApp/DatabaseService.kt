@@ -75,6 +75,31 @@ class DatabaseService {
         }
     }
     
+    suspend fun getTokensWithImages(): List<TokenRecord> {
+        return withContext(Dispatchers.IO) {
+            try {
+                android.util.Log.d("DatabaseService", "Attempting to read tokens with images...")
+                val allTokens = supabase.from("tokens")
+                    .select()
+                    .decodeList<TokenRecord>()
+                
+                // Filter tokens that have non-null and non-empty image URLs
+                val tokensWithImages = allTokens.filter { !it.image_url.isNullOrEmpty() }
+                android.util.Log.d("DatabaseService", "Successfully read ${tokensWithImages.size} tokens with images")
+                
+                // Log the image URLs found
+                tokensWithImages.forEach { token ->
+                    android.util.Log.d("DatabaseService", "Token '${token.token_name}' has image: ${token.image_url}")
+                }
+                
+                tokensWithImages
+            } catch (e: Exception) {
+                android.util.Log.e("DatabaseService", "Error reading tokens with images: ${e.message}")
+                emptyList()
+            }
+        }
+    }
+    
     // Test with correct database structure
     suspend fun getRawTokenData(): String {
         return withContext(Dispatchers.IO) {
@@ -308,6 +333,25 @@ class DatabaseService {
             } catch (e: Exception) {
                 android.util.Log.e("DatabaseService", "Error getting SOL balance: ${e.message}")
                 1.0 // Default balance on error
+            }
+        }
+    }
+
+    suspend fun getTokensByCreator(creatorWallet: String): List<TokenRecord> {
+        return withContext(Dispatchers.IO) {
+            try {
+                android.util.Log.d("DatabaseService", "Getting tokens created by wallet: $creatorWallet")
+                val allTokens = supabase.from("tokens")
+                    .select()
+                    .decodeList<TokenRecord>()
+                
+                val tokens = allTokens.filter { it.creator_wallet == creatorWallet }
+                
+                android.util.Log.d("DatabaseService", "Found ${tokens.size} tokens created by $creatorWallet")
+                tokens
+            } catch (e: Exception) {
+                android.util.Log.e("DatabaseService", "Error fetching tokens by creator: ${e.message}")
+                emptyList()
             }
         }
     }

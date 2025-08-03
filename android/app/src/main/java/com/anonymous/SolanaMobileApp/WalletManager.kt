@@ -91,8 +91,8 @@ class WalletManager(private val context: Context) {
     }
     
     private fun generateMockPublicKey(): String {
-        // Use the test wallet address
-        return "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu"
+        // Use the specified wallet address for testing
+        return "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD"
     }
     
     suspend fun disconnectWallet() = withContext(Dispatchers.IO) {

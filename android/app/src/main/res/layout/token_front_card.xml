@@ -22,13 +22,15 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-    <!-- Image placeholder -->
-    <View
-        android:id="@+id/imagePlaceholder"
+    <!-- Token image -->
+    <ImageView
+        android:id="@+id/tokenImage"
         android:layout_width="match_parent"
         android:layout_height="200dp"
         android:background="#f0f0f0"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="16dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="Token image" />
 
     <!-- Token info -->
     <TextView

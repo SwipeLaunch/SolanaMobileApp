@@ -6,6 +6,7 @@ data class TokenData(
     val creator: String,
     val description: String,
     val likes: Int,
+    val imageUrl: String? = null,
     // Creator detailed info
     val creatorWallet: String,
     val creatorTwitter: String,
