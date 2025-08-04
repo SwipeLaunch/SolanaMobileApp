@@ -135,33 +135,48 @@
 
                 </androidx.cardview.widget.CardView>
 
-                <!-- Photo Action Buttons -->
+                <!-- Photo Action Buttons - Meta Style -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp">
 
                     <Button
                         android:id="@+id/takePhotoButton"
                         android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_marginEnd="8dp"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="4dp"
                         android:layout_weight="1"
-                        android:backgroundTint="#14B8A6"
-                        android:text="📷 Take Photo"
-                        android:textColor="#ffffff"
-                        android:textSize="14sp" />
+                        android:backgroundTint="#E4E6EA"
+                        android:text="📷 Camera"
+                        android:textColor="#1C1C1E"
+                        android:textSize="13sp"
+                        android:fontFamily="sans-serif-medium" />
 
                     <Button
                         android:id="@+id/selectImageButton"
                         android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_marginStart="8dp"
+                        android:layout_height="36dp"
+                        android:layout_marginHorizontal="4dp"
                         android:layout_weight="1"
-                        android:backgroundTint="#6366F1"
+                        android:backgroundTint="#E4E6EA"
                         android:text="🖼️ Gallery"
+                        android:textColor="#1C1C1E"
+                        android:textSize="13sp"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <Button
+                        android:id="@+id/urlImageButton"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:backgroundTint="#9945FF"
+                        android:text="🔗 URL"
                         android:textColor="#ffffff"
-                        android:textSize="14sp" />
+                        android:textSize="13sp"
+                        android:fontFamily="sans-serif-medium" />
 
                 </LinearLayout>
 

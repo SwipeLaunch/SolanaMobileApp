@@ -22,8 +22,9 @@ data class TokenLaunchedData(
     fun getFormattedMarketCapUSD(): String {
         return when {
             marketCapUSD >= 1_000_000 -> "$${String.format("%.2f", marketCapUSD / 1_000_000)}M"
-            marketCapUSD >= 1_000 -> "$${String.format("%.1f", marketCapUSD / 1_000)}K"
-            else -> "$${String.format("%.0f", marketCapUSD)}"
+            marketCapUSD >= 100_000 -> "$${String.format("%.1f", marketCapUSD / 1_000)}K"
+            marketCapUSD >= 10_000 -> "$${String.format("%.1f", marketCapUSD / 1_000)}K"
+            else -> "$${String.format("%,.1f", marketCapUSD)}"
         }
     }
 }

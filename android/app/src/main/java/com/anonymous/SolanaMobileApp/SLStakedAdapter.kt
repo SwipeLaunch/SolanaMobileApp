@@ -40,10 +40,13 @@ class SLStakedAdapter(
         }
         
         holder.displayName.text = user.getDisplayName()
-        holder.stakeDuration.text = user.getVotingRightsText()
+        val votingRights = user.getVotingRightsText()
+        holder.stakeDuration.text = votingRights
         holder.walletAddress.text = "${user.walletAddress.take(4)}...${user.walletAddress.takeLast(4)}"
         holder.stakedAmount.text = user.getFormattedSLBalance()
         holder.rewardsEarned.text = "${user.dailyVotingRightsRemaining} likes left"
+        
+        android.util.Log.d("SLStakedAdapter", "${user.getDisplayName()}: Voting rights = $votingRights, SL = ${user.getFormattedSLBalance()}")
         
         // Generate random color for user avatar placeholder
         val colors = listOf("#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#FDA7DF")

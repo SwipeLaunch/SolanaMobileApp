@@ -1,11 +1,24 @@
 package com.anonymous.SolanaMobileApp
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.caverock.androidsvg.SVG
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.*
 
 class TokenLaunchedAdapter(
     private val tokens: List<TokenLaunchedData>
@@ -13,7 +26,7 @@ class TokenLaunchedAdapter(
 
     class TokenViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val rankBadge: TextView = itemView.findViewById(R.id.rankBadge)
-        val tokenLogo: View = itemView.findViewById(R.id.tokenLogo)
+        val tokenLogo: ImageView = itemView.findViewById(R.id.tokenLogo)
         val tokenName: TextView = itemView.findViewById(R.id.tokenName)
         val tokenSymbol: TextView = itemView.findViewById(R.id.tokenSymbol)
         val creatorName: TextView = itemView.findViewById(R.id.creatorName)
@@ -42,14 +55,63 @@ class TokenLaunchedAdapter(
         holder.tokenName.text = token.tokenName
         holder.tokenSymbol.text = token.tokenSymbol
         holder.creatorName.text = "by ${token.creator}"
-        holder.marketCapSOL.text = token.getFormattedMarketCap()
-        holder.marketCapUSD.text = token.getFormattedMarketCapUSD()
+        // Show market cap in USD as main value
+        val formattedMarketCap = token.getFormattedMarketCapUSD()
+        holder.marketCapSOL.text = formattedMarketCap
+        android.util.Log.d("TokenAdapter", "${token.tokenName}: Raw=${token.marketCapUSD} → Formatted=${formattedMarketCap}")
         
-        // Generate random color for token logo placeholder
-        val colors = listOf("#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#FDA7DF")
-        val colorIndex = position % colors.size
-        holder.tokenLogo.setBackgroundColor(Color.parseColor(colors[colorIndex]))
+        // Show launch date as secondary info
+        val dateFormat = SimpleDateFormat("MMM dd", Locale.getDefault())
+        holder.marketCapUSD.text = "Launched ${dateFormat.format(Date(token.launchDate))}"
+        
+        // Load token logo image with SVG support
+        if (!token.logoUrl.isNullOrEmpty()) {
+            if (token.logoUrl.contains(".svg") || token.logoUrl.contains("/svg?")) {
+                // Load SVG using custom loader
+                loadSvgImage(token.logoUrl, holder.tokenLogo)
+            } else {
+                // Load regular image using Glide
+                Glide.with(holder.itemView.context)
+                    .load(token.logoUrl)
+                    .centerCrop()
+                    .placeholder(android.R.color.darker_gray)
+                    .error(android.R.color.holo_red_light)
+                    .into(holder.tokenLogo)
+            }
+        } else {
+            // Generate random color for token logo placeholder if no image
+            val colors = listOf("#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#FDA7DF")
+            val colorIndex = position % colors.size
+            holder.tokenLogo.setBackgroundColor(Color.parseColor(colors[colorIndex]))
+        }
     }
 
     override fun getItemCount(): Int = tokens.size
+    
+    private fun loadSvgImage(svgUrl: String, imageView: ImageView) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Load SVG from URL
+                val inputStream = URL(svgUrl).openStream()
+                val svg = SVG.getFromInputStream(inputStream)
+                
+                // Create a bitmap from the SVG
+                val bitmap = Bitmap.createBitmap(400, 400, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                svg.renderToCanvas(canvas)
+                
+                withContext(Dispatchers.Main) {
+                    // Set the bitmap to the ImageView
+                    val drawable = BitmapDrawable(imageView.context.resources, bitmap)
+                    imageView.setImageDrawable(drawable)
+                    imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    // Set placeholder on error
+                    imageView.setBackgroundColor(imageView.context.getColor(android.R.color.holo_red_light))
+                }
+            }
+        }
+    }
 }

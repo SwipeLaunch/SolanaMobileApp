@@ -15,8 +15,7 @@ import java.util.*
 
 class ActivityFeedAdapter(
     private val activities: List<ActivityFeedData>,
-    private val onViewTokenClick: (ActivityFeedData) -> Unit = {},
-    private val onLikeClick: (ActivityFeedData) -> Unit = {}
+    private val onViewTokenClick: (ActivityFeedData) -> Unit = {}
 ) : RecyclerView.Adapter<ActivityFeedAdapter.ActivityViewHolder>() {
 
     class ActivityViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -29,8 +28,6 @@ class ActivityFeedAdapter(
         val tokenName: TextView = itemView.findViewById(R.id.tokenName)
         val tokenCreator: TextView = itemView.findViewById(R.id.tokenCreator)
         val tokenPrice: TextView = itemView.findViewById(R.id.tokenPrice)
-        val viewTokenButton: Button = itemView.findViewById(R.id.viewTokenButton)
-        val likeButton: Button = itemView.findViewById(R.id.likeButton)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ActivityViewHolder {
@@ -43,9 +40,12 @@ class ActivityFeedAdapter(
         val activity = activities[position]
         
         // Set user info
+        android.util.Log.d("ActivityFeedAdapter", "Loading avatar: ${activity.userAvatar} for user: ${activity.userName}")
         Glide.with(holder.itemView.context)
             .load(activity.userAvatar)
             .circleCrop()
+            .placeholder(android.R.color.darker_gray)
+            .error(android.R.color.holo_red_light)
             .into(holder.userAvatar)
         holder.userName.text = activity.userName
         holder.activityTime.text = formatTimeAgo(activity.timestamp)
@@ -63,17 +63,13 @@ class ActivityFeedAdapter(
             holder.tokenName.text = activity.tokenInfo.tokenName
             holder.tokenCreator.text = "by ${activity.tokenInfo.tokenCreator}"
             holder.tokenPrice.text = activity.tokenInfo.tokenPrice
+            
+            // Make the whole token card clickable for mobile-friendly UX
+            holder.tokenInfoCard.setOnClickListener {
+                onViewTokenClick(activity)
+            }
         } else {
             holder.tokenInfoCard.visibility = View.GONE
-        }
-        
-        // Set click listeners
-        holder.viewTokenButton.setOnClickListener {
-            onViewTokenClick(activity)
-        }
-        
-        holder.likeButton.setOnClickListener {
-            onLikeClick(activity)
         }
     }
 

@@ -61,8 +61,8 @@ class PresaleAdapter(
                 Glide.with(holder.itemView.context)
                     .load(token.logoUrl)
                     .centerCrop()
-                    .placeholder(R.color.light_gray)
-                    .error(R.color.light_gray)
+                    .placeholder(android.R.color.darker_gray)
+                    .error(android.R.color.holo_red_light)
                     .into(holder.tokenLogo)
             }
         } else {

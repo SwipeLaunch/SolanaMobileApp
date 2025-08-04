@@ -21,39 +21,47 @@ class CreatorProfileManager(
 ) {
     
     companion object {
-        private const val CREATOR_ADDRESS = "umuAXMPXgzcgbmg2361ij8jncRWyb8noZeXFFCdvKmNu"
+        private const val CREATOR_ADDRESS = "W97AHbiw4WJ5RxCMTVD9UKwfesgM5qpNhXufw6tgwfsD"
     }
     
-    // UI Elements
-    private val creatorAddress: TextView = profileView.findViewById(R.id.creatorAddress)
-    private val totalTokenCount: TextView = profileView.findViewById(R.id.totalTokenCount)
-    private val lastUpdated: TextView = profileView.findViewById(R.id.lastUpdated)
-    private val creatorTokensRecyclerView: RecyclerView = profileView.findViewById(R.id.creatorTokensRecyclerView)
-    private val creatorTokensEmptyState: LinearLayout = profileView.findViewById(R.id.creatorTokensEmptyState)
-    private val creatorTokensLoadingState: LinearLayout = profileView.findViewById(R.id.creatorTokensLoadingState)
-    private val refreshTokensButton: Button = profileView.findViewById(R.id.refreshTokensButton)
+    // UI Elements - using actual IDs from creator_profile_page.xml
+    private val creatorTokensRecyclerView: RecyclerView? = profileView.findViewById(R.id.creatorTokensRecyclerView)
+    private val creatorTokensEmptyState: LinearLayout? = profileView.findViewById(R.id.creatorTokensEmptyState)
+    private val creatorTokensLoadingState: LinearLayout? = profileView.findViewById(R.id.creatorTokensLoadingState)
+    private val totalTokenCount: TextView? = profileView.findViewById(R.id.totalTokenCount)
+    private val lastUpdated: TextView? = profileView.findViewById(R.id.lastUpdated)
+    private val refreshTokensButton: Button? = profileView.findViewById(R.id.refreshTokensButton)
     
     // Data
     private var creatorTokens = mutableListOf<CreatedTokenInfo>()
     
     init {
         setupUI()
-        loadCreatorTokens()
+        // Don't auto-load on init, wait for tokens to be added
+        showEmptyState()
+        
+        // Set up refresh button click listener
+        refreshTokensButton?.setOnClickListener {
+            android.util.Log.d("CreatorProfile", "Refresh button clicked - showing cached tokens: ${creatorTokens.size}")
+            if (creatorTokens.isNotEmpty()) {
+                updateTokenDisplay(creatorTokens)
+            } else {
+                loadCreatorTokens() // This will load sample data as fallback
+            }
+        }
     }
     
     private fun setupUI() {
-        // Display creator address (shortened)
-        creatorAddress.text = "${CREATOR_ADDRESS.take(8)}...${CREATOR_ADDRESS.takeLast(6)}"
+        // Check if UI elements exist
+        if (creatorTokensRecyclerView == null) {
+            android.util.Log.e("CreatorProfile", "Required UI elements not found in profile layout")
+            return
+        }
         
         // Setup RecyclerView
         creatorTokensRecyclerView.layoutManager = LinearLayoutManager(context)
         
-        // Setup refresh button
-        refreshTokensButton.setOnClickListener {
-            loadCreatorTokens()
-        }
-        
-        android.util.Log.d("CreatorProfile", "Creator Profile Manager initialized for: $CREATOR_ADDRESS")
+        android.util.Log.d("CreatorProfile", "Creator Profile Manager initialized for created tokens display")
     }
     
     fun loadCreatorTokens() {
@@ -131,50 +139,46 @@ class CreatorProfileManager(
     }
     
     private fun showLoadingState() {
-        creatorTokensRecyclerView.visibility = View.GONE
-        creatorTokensEmptyState.visibility = View.GONE
-        creatorTokensLoadingState.visibility = View.VISIBLE
-        refreshTokensButton.isEnabled = false
+        creatorTokensRecyclerView?.visibility = View.GONE
+        creatorTokensEmptyState?.visibility = View.GONE
+        creatorTokensLoadingState?.visibility = View.VISIBLE
     }
     
     private fun showEmptyState() {
-        creatorTokensRecyclerView.visibility = View.GONE
-        creatorTokensEmptyState.visibility = View.VISIBLE
-        creatorTokensLoadingState.visibility = View.GONE
-        refreshTokensButton.isEnabled = true
-        totalTokenCount.text = "0"
+        creatorTokensRecyclerView?.visibility = View.GONE
+        creatorTokensEmptyState?.visibility = View.VISIBLE
+        creatorTokensLoadingState?.visibility = View.GONE
     }
     
     private fun updateTokenDisplay(tokens: List<CreatedTokenInfo>) {
         creatorTokens.clear()
         creatorTokens.addAll(tokens)
         
-        if (tokens.isNotEmpty()) {
+        if (tokens.isNotEmpty() && creatorTokensRecyclerView != null) {
             // Show tokens
-            creatorTokensRecyclerView.visibility = View.VISIBLE
-            creatorTokensEmptyState.visibility = View.GONE
-            creatorTokensLoadingState.visibility = View.GONE
+            creatorTokensRecyclerView?.visibility = View.VISIBLE
+            creatorTokensEmptyState?.visibility = View.GONE
+            creatorTokensLoadingState?.visibility = View.GONE
             
             // Setup adapter
             val adapter = MyTokensAdapter(tokens) { token ->
                 showTokenDetails(token)
             }
-            creatorTokensRecyclerView.adapter = adapter
+            creatorTokensRecyclerView?.adapter = adapter
             
-            // Update count
-            totalTokenCount.text = tokens.size.toString()
+            // Update total token count
+            totalTokenCount?.text = tokens.size.toString()
             
-            android.util.Log.d("CreatorProfile", "Displayed ${tokens.size} creator tokens")
+            android.util.Log.d("CreatorProfile", "Displayed ${tokens.size} created tokens")
         } else {
             showEmptyState()
         }
-        
-        refreshTokensButton.isEnabled = true
     }
     
     private fun updateLastRefreshTime() {
-        val formatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-        lastUpdated.text = formatter.format(Date())
+        val timeText = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        lastUpdated?.text = timeText
+        android.util.Log.d("CreatorProfile", "Tokens refreshed at $timeText")
     }
     
     private fun showTokenDetails(token: CreatedTokenInfo) {
@@ -211,7 +215,11 @@ class CreatorProfileManager(
     // Public method to add a newly created token
     fun addNewToken(token: CreatedTokenInfo) {
         creatorTokens.add(0, token) // Add to beginning
+        android.util.Log.d("CreatorProfile", "Adding token: ${token.name} (${token.symbol})")
+        android.util.Log.d("CreatorProfile", "Total tokens now: ${creatorTokens.size}")
+        android.util.Log.d("CreatorProfile", "UI elements - RecyclerView: ${creatorTokensRecyclerView != null}, EmptyState: ${creatorTokensEmptyState != null}")
         updateTokenDisplay(creatorTokens)
-        android.util.Log.d("CreatorProfile", "Added new token: ${token.name}")
+        updateLastRefreshTime()
+        android.util.Log.d("CreatorProfile", "Token display updated")
     }
 }

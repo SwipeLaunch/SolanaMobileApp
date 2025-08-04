@@ -130,34 +130,6 @@
 
         </LinearLayout>
 
-        <!-- Interaction buttons -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="end"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/viewTokenButton"
-                style="?android:attr/borderlessButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginEnd="8dp"
-                android:paddingHorizontal="16dp"
-                android:text="View"
-                android:textColor="#9945FF"
-                android:textSize="12sp" />
-
-            <Button
-                android:id="@+id/likeButton"
-                style="?android:attr/borderlessButtonStyle" 
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:text="❤️"
-                android:textSize="14sp" />
-
-        </LinearLayout>
 
     </LinearLayout>
 
