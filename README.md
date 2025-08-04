@@ -1,4 +1,4 @@
-# SwipeLaunch - Solana Token Discovery App
+# SwipeLaunch - Tinder-like mobile launching pad
 
 A mobile-first Android application for discovering and interacting with Solana tokens through an intuitive swipeable interface, featuring Solana Mobile Stack integration.
 
