@@ -38,4 +38,25 @@ yarn-error.*
 
 app-example
 
+# Android specific
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/google-services.json
+android/app/src/main/assets/
+*.apk
+*.aab
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# Logs
+*.log
+
+# Sensitive files
 CLAUDE.md
+.env
+secrets.properties
