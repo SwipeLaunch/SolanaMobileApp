@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- Security Information -->
+    <TextView
+        android:id="@+id/securityInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔐 Hardware Seed Vault\n📱 Device: Unknown\n🛡️ Keys stored in secure hardware"
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:background="#F5F5F5"
+        android:padding="12dp"
+        android:layout_marginBottom="20dp"
+        android:textAlignment="center" />
+
+    <!-- SMS Seed Vault Button -->
+    <Button
+        android:id="@+id/connectSmsButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🛡️ SMS Seed Vault (Recommended)"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:background="#9945FF"
+        android:textColor="#FFFFFF"
+        android:padding="16dp"
+        android:layout_marginBottom="12dp"
+        android:elevation="4dp" />
+
+    <!-- External Wallet Options -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📱 External Wallets"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Phantom Button -->
+    <Button
+        android:id="@+id/connectPhantomButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="👻 Phantom Wallet"
+        android:textSize="14sp"
+        android:background="#7C3AED"
+        android:textColor="#FFFFFF"
+        android:padding="12dp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Solflare Button -->
+    <Button
+        android:id="@+id/connectSolflareButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🌞 Solflare Wallet"
+        android:textSize="14sp"
+        android:background="#FCA326"
+        android:textColor="#FFFFFF"
+        android:padding="12dp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Mock Wallet for Testing -->
+    <Button
+        android:id="@+id/connectMockButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🧪 Mock Wallet (Testing)"
+        android:textSize="12sp"
+        android:background="#6B7280"
+        android:textColor="#FFFFFF"
+        android:padding="10dp"
+        android:layout_marginTop="8dp" />
+
+</LinearLayout>

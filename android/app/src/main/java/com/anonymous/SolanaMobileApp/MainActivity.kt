@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
@@ -39,6 +40,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bottomNavigation: BottomNavigationView
     private lateinit var swipeContainer: FrameLayout
     private lateinit var walletManager: WalletManager
+    private lateinit var mwaService: com.anonymous.SolanaMobileApp.services.MobileWalletAdapterService
+    private lateinit var seedVaultService: com.anonymous.SolanaMobileApp.services.SeedVaultService
+    private lateinit var walletDialog: WalletConnectionDialog
     private lateinit var databaseService: DatabaseService
     private val tokenCards = mutableListOf<SwipeableTokenCard>()
     private var currentCardIndex = 0
@@ -181,6 +185,10 @@ class MainActivity : AppCompatActivity() {
         initViews()
         setupDatabase()
         setupWalletManager()
+        setupMWAService()
+        setupSeedVaultService()
+        setupWalletDialog()
+        setupWalletFloatingButton()
         setupBottomNavigation()
         setupSwipeCards()
         
@@ -3243,5 +3251,252 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+    
+    private fun setupMWAService() {
+        mwaService = com.anonymous.SolanaMobileApp.services.MobileWalletAdapterService(this)
+        
+        // Observe wallet state changes
+        lifecycleScope.launch {
+            mwaService.walletState.collect { state ->
+                when (state) {
+                    is com.anonymous.SolanaMobileApp.services.MobileWalletAdapterService.WalletState.Connected -> {
+                        val displayKey = formatPublicKey(state.publicKey)
+                        updateProfileUI(true, state.publicKey, displayKey)
+                        updateWalletBalance(state.balance)
+                        showToast("✅ ${state.walletName} connected!")
+                    }
+                    is com.anonymous.SolanaMobileApp.services.MobileWalletAdapterService.WalletState.Disconnected -> {
+                        updateProfileUI(false, null, null)
+                        showToast("Wallet disconnected")
+                    }
+                    is com.anonymous.SolanaMobileApp.services.MobileWalletAdapterService.WalletState.Connecting -> {
+                        showToast("Connecting to wallet...")
+                    }
+                    is com.anonymous.SolanaMobileApp.services.MobileWalletAdapterService.WalletState.Error -> {
+                        showToast("Wallet error: ${state.message}")
+                    }
+                }
+            }
+        }
+    }
+    
+    private fun formatPublicKey(publicKey: String): String {
+        return if (publicKey.length > 8) {
+            "${publicKey.take(4)}...${publicKey.takeLast(4)}"
+        } else {
+            publicKey
+        }
+    }
+    
+    private fun updateWalletBalance(balance: Double) {
+        // Update balance display - find the balance TextView and update it
+        try {
+            val balanceText = profilePage.findViewById<TextView>(R.id.profileSolBalance) 
+                ?: profilePage.findViewById<TextView>(R.id.walletBalanceText)
+            balanceText?.text = String.format("%.4f SOL", balance)
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Failed to update balance display", e)
+        }
+    }
+    
+    private fun setupSeedVaultService() {
+        seedVaultService = com.anonymous.SolanaMobileApp.services.SeedVaultService(this)
+        
+        // Check if device supports Seed Vault
+        if (seedVaultService.isDeviceSupported()) {
+            Log.d("SeedVault", "Device supports Seed Vault")
+            showToast("📱 Seed Vault supported on this device")
+            
+            // Initialize Seed Vault in background
+            lifecycleScope.launch {
+                try {
+                    seedVaultService.initializeSeedVault()
+                    seedVaultService.createOrAccessSeed()
+                } catch (e: Exception) {
+                    Log.e("SeedVault", "Failed to setup Seed Vault", e)
+                }
+            }
+        } else {
+            Log.d("SeedVault", "Device does not support Seed Vault - using fallback")
+            showToast("📱 Using secure wallet fallback")
+        }
+        
+        // Observe Seed Vault state changes
+        lifecycleScope.launch {
+            seedVaultService.seedVaultState.collect { state ->
+                when (state) {
+                    is com.anonymous.SolanaMobileApp.services.SeedVaultService.SeedVaultState.Connected -> {
+                        val displayKey = formatPublicKey(state.publicKey)
+                        updateProfileUI(true, state.publicKey, displayKey)
+                        showToast("🔐 Seed Vault connected securely!")
+                        Log.d("SeedVault", "Connected with seed ID: ${state.seedId}")
+                    }
+                    is com.anonymous.SolanaMobileApp.services.SeedVaultService.SeedVaultState.Disconnected -> {
+                        Log.d("SeedVault", "Seed Vault disconnected")
+                    }
+                    is com.anonymous.SolanaMobileApp.services.SeedVaultService.SeedVaultState.Connecting -> {
+                        showToast("🔐 Connecting to Seed Vault...")
+                    }
+                    is com.anonymous.SolanaMobileApp.services.SeedVaultService.SeedVaultState.Error -> {
+                        showToast("❌ Seed Vault error: ${state.message}")
+                        Log.e("SeedVault", "Error: ${state.message}")
+                    }
+                }
+            }
+        }
+    }
+    
+    private fun setupWalletDialog() {
+        walletDialog = WalletConnectionDialog(
+            context = this,
+            lifecycleScope = lifecycleScope,
+            seedVaultService = seedVaultService,
+            mwaService = mwaService,
+            onWalletConnected = { publicKey, displayKey ->
+                updateProfileUI(true, publicKey, displayKey)
+            }
+        )
+        
+        // Set up wallet connection buttons
+        setupWalletButtons()
+    }
+    
+    private fun setupWalletButtons() {
+        // Find the profile page wallet buttons
+        try {
+            Log.d("WalletButtons", "Setting up profile page wallet buttons...")
+            
+            // GET SOL button - shows connection options if disconnected, airdrops if connected
+            val getSolButton = profilePage.findViewById<Button>(R.id.requestAirdropButton)
+            getSolButton?.setOnClickListener {
+                Log.d("WalletButtons", "GET SOL button clicked")
+                if (isAnyWalletConnected()) {
+                    // If wallet is connected, request airdrop
+                    showToast("💰 Requesting SOL airdrop...")
+                    lifecycleScope.launch {
+                        kotlinx.coroutines.delay(1000)
+                        showToast("✅ 1.0 SOL airdropped!")
+                    }
+                } else {
+                    // If no wallet connected, show connection options
+                    Log.d("WalletButtons", "No wallet connected, showing connection options")
+                    walletDialog.showConnectionOptions()
+                }
+            }
+            
+            // SIGN OUT button - shows disconnect confirmation then connection options
+            val signOutButton = profilePage.findViewById<Button>(R.id.disconnectWalletButton)
+            signOutButton?.setOnClickListener {
+                Log.d("WalletButtons", "SIGN OUT button clicked")
+                if (isAnyWalletConnected()) {
+                    // Show disconnect confirmation, then show connection options
+                    androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                        .setTitle("🔓 Disconnect Wallet")
+                        .setMessage("Disconnect current wallet and choose a new connection method?")
+                        .setPositiveButton("Disconnect & Choose New") { _, _ ->
+                            disconnectAllWallets()
+                            // Show connection options after disconnect
+                            kotlinx.coroutines.MainScope().launch {
+                                kotlinx.coroutines.delay(500) // Small delay for UI
+                                walletDialog.showConnectionOptions()
+                            }
+                        }
+                        .setNegativeButton("Cancel", null)
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .show()
+                } else {
+                    // If not connected, show connection options directly
+                    Log.d("WalletButtons", "No wallet connected, showing connection options")
+                    walletDialog.showConnectionOptions()
+                }
+            }
+            
+            // COPY button - copies wallet address
+            val copyButton = profilePage.findViewById<Button>(R.id.copyAddressButton)
+            copyButton?.setOnClickListener {
+                Log.d("WalletButtons", "COPY button clicked")
+                val currentAddress = getCurrentWalletAddress()
+                if (currentAddress != null) {
+                    copyToClipboard(currentAddress)
+                    showToast("📋 Address copied: ${currentAddress.take(8)}...")
+                } else {
+                    showToast("❌ No wallet connected")
+                }
+            }
+            
+            Log.d("WalletButtons", "✅ Profile wallet buttons configured successfully")
+            
+        } catch (e: Exception) {
+            Log.e("WalletButtons", "❌ Error setting up wallet buttons", e)
+        }
+    }
+    
+    private fun isAnyWalletConnected(): Boolean {
+        return seedVaultService.isConnected() || 
+               mwaService.isConnected() || 
+               walletManager.isWalletConnected()
+    }
+    
+    private fun getCurrentWalletAddress(): String? {
+        return seedVaultService.getPublicKey() ?: 
+               mwaService.getPublicKey() ?: 
+               walletManager.getConnectedPublicKey()
+    }
+    
+    private fun disconnectAllWallets() {
+        lifecycleScope.launch {
+            try {
+                // Disconnect all wallet services
+                seedVaultService.disconnect()
+                mwaService.disconnect()
+                walletManager.disconnectWallet()
+                
+                // Update UI to show disconnected state
+                updateProfileUI(false, null, null)
+                showToast("🔓 All wallets disconnected")
+                
+            } catch (e: Exception) {
+                Log.e("WalletDisconnect", "Error disconnecting wallets", e)
+                showToast("❌ Error disconnecting: ${e.message}")
+            }
+        }
+    }
+    
+    
+    private fun setupWalletFloatingButton() {
+        val walletFab = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.walletConnectionFab)
+        
+        walletFab?.setOnClickListener {
+            Log.d("WalletFab", "🔘 Wallet connection FAB clicked!")
+            showToast("🔐 Opening SMS Seed Vault options...")
+            
+            try {
+                walletDialog.showConnectionOptions()
+            } catch (e: Exception) {
+                Log.e("WalletFab", "Error showing wallet dialog", e)
+                showToast("❌ Error: ${e.message}")
+            }
+        }
+        
+        Log.d("WalletFab", "✅ Wallet floating button initialized")
+    }
+    
+    private fun showWalletFloatingButton(show: Boolean) {
+        val walletFab = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.walletConnectionFab)
+        walletFab?.visibility = if (show) View.VISIBLE else View.GONE
+        Log.d("WalletFab", if (show) "🔘 Showing wallet FAB" else "🔘 Hiding wallet FAB")
+    }
+    
+    private fun copyToClipboard(text: String) {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        val clip = android.content.ClipData.newPlainText("Wallet Address", text)
+        clipboard.setPrimaryClip(clip)
+    }
+    
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        // Handle wallet connection responses
+        mwaService.handleWalletResponse(intent)
     }
 }

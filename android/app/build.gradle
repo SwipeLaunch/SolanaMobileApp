@@ -52,8 +52,11 @@ dependencies {
     implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
     implementation 'com.google.android.material:material:1.11.0'
     
-    // For now, we'll create a mock implementation
-    // TODO: Add proper MWA when dependencies are resolved
+    // Solana Mobile Stack - Seed Vault (SMS)
+    implementation 'com.solanamobile:seedvault-wallet-sdk:0.3.2'
+    
+    // Mobile Wallet Adapter
+    implementation 'com.solanamobile:mobile-wallet-adapter-clientlib-ktx:2.0.1'
     
     // HTTP client for Solana RPC calls
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
