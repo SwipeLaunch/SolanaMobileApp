@@ -1,38 +1,40 @@
 # SwipeLaunch - Solana Token Discovery App
 
-A mobile-first Android application for discovering and interacting with Solana tokens through an intuitive swipeable interface, featuring cutting-edge Solana Mobile Stack integration.
+A mobile-first Android application for discovering and interacting with Solana tokens through an intuitive swipeable interface, featuring Solana Mobile Stack integration.
+
+**[Join Waitlist](https://swipelaunch.fun/)** | **[Watch Demo](https://youtube.com/shorts/E-IYLk6X7b0)** | **[View Pitch](https://youtu.be/aKySJUk3rM0)** | **[GitHub](https://github.com/SwipeLaunch)** | **[Follow @Swipe_Launch](https://x.com/Swipe_Launch)**
 
 ## Project Overview
 
-SwipeLaunch revolutionizes token discovery by combining a Tinder-like swipe interface with comprehensive analytics, presale participation, and social features - all powered by the Solana Mobile Stack's secure wallet infrastructure.
+SwipeLaunch is a token discovery platform that combines a swipeable interface with analytics, presale participation, and social features. The application integrates with the Solana Mobile Stack for secure wallet management.
 
 ## Key Features
 
-### 🔐 Advanced Wallet Security
+### Wallet Security
 - **SMS Seed Vault Integration**: Hardware-backed private key storage using Solana Mobile Stack
 - **Multiple Wallet Support**: Phantom, Solflare, and native SMS Seed Vault connections
 - **Hardware Security**: Keys stored in device's secure execution environment
 - **BIP44 Compliance**: Standard Solana derivation paths (`m/44'/501'/0'/0'`)
 
-### 🎯 Token Discovery
-- **Swipeable Interface**: Discover tokens with intuitive swipe gestures
+### Token Discovery
+- **Swipeable Interface**: Discover tokens with swipe gestures
 - **Real-time Data**: Live token information from integrated database
-- **Smart Recommendations**: AI-powered token curation
+- **Token Curation**: Curated token feed based on community activity
 - **Social Features**: Follow creators and track community activity
 
-### 💎 Presale Marketplace
+### Presale Marketplace
 - **Active Presales**: Browse and participate in token launches
 - **Progress Tracking**: Real-time countdown timers and funding progress
 - **Secure Transactions**: Hardware-backed transaction signing
 
-### 📊 Analytics & Leaderboards  
+### Analytics & Leaderboards  
 - **Multiple Rankings**: Token launches, staking, popularity metrics
 - **Real-time Updates**: Live leaderboard data
-- **Mobile-Optimized UI**: Responsive design with visual indicators
+- **Mobile Interface**: Responsive design with visual indicators
 
-### 👤 User Profile
-- **Secure Wallet Management**: Connect/disconnect with SMS Seed Vault
-- **Activity Tracking**: Comprehensive interaction analytics  
+### User Profile
+- **Wallet Management**: Connect/disconnect with SMS Seed Vault
+- **Activity Tracking**: Interaction analytics  
 - **Creator Dashboard**: Token creation and engagement metrics
 
 ## Technology Stack
@@ -54,7 +56,7 @@ SwipeLaunch revolutionizes token discovery by combining a Tinder-like swipe inte
 
 ### Quick Start
 ```bash
-git clone <repository-url>
+git clone https://github.com/SwipeLaunch/SwipeLaunch.git
 cd SwipeLaunch/android
 ./gradlew clean installDebug
 adb shell am start -n com.anonymous.SolanaMobileApp/.MainActivity
@@ -73,10 +75,10 @@ adb shell am start -n com.anonymous.SolanaMobileApp/.MainActivity
 ## Solana Mobile Stack Integration
 
 ### SMS Seed Vault Features
-- **🛡️ Hardware Security**: Private keys never leave secure hardware
-- **🔑 Key Derivation**: BIP44-compliant Solana key generation
-- **📱 Device Detection**: Automatic Solana Phone compatibility detection
-- **🔒 Secure Signing**: Hardware-backed transaction signatures
+- **Hardware Security**: Private keys never leave secure hardware
+- **Key Derivation**: BIP44-compliant Solana key generation
+- **Device Detection**: Automatic Solana Phone compatibility detection
+- **Secure Signing**: Hardware-backed transaction signatures
 
 ### Wallet Connection Options
 1. **SMS Seed Vault** (Recommended) - Hardware-backed security
@@ -109,30 +111,30 @@ android/
 
 ## Recent Updates (v2.0.0)
 
-### 🔐 Solana Mobile Stack Integration
-- ✅ SMS Seed Vault hardware-backed wallet storage
-- ✅ Multiple wallet provider support (Phantom, Solflare)
-- ✅ Secure transaction signing with hardware isolation
-- ✅ BIP44 Solana key derivation implementation
+### Solana Mobile Stack Integration
+- SMS Seed Vault hardware-backed wallet storage
+- Multiple wallet provider support (Phantom, Solflare)
+- Secure transaction signing with hardware isolation
+- BIP44 Solana key derivation implementation
 
-### 🎨 UI/UX Enhancements
-- ✅ Floating action button for wallet connections
-- ✅ Improved profile page wallet management
-- ✅ Enhanced token sharing capabilities
-- ✅ Optimized mobile interface design
+### UI/UX Enhancements
+- Floating action button for wallet connections
+- Improved profile page wallet management
+- Enhanced token sharing capabilities
+- Optimized mobile interface design
 
-### 🚀 Performance Improvements
-- ✅ Real-time database synchronization
-- ✅ Optimized token loading and caching
-- ✅ Enhanced network connectivity handling
+### Performance Improvements
+- Real-time database synchronization
+- Optimized token loading and caching
+- Enhanced network connectivity handling
 
 ## Security Features
 
-- **🔐 Hardware Isolation**: Private keys stored in secure hardware
-- **🛡️ No Key Exposure**: Keys never accessible to application layer
-- **🔒 Encrypted Communications**: All network traffic encrypted
-- **✅ Input Validation**: Comprehensive data sanitization
-- **🔐 Secure Derivation**: Industry-standard BIP44 key paths
+- **Hardware Isolation**: Private keys stored in secure hardware
+- **No Key Exposure**: Keys never accessible to application layer
+- **Encrypted Communications**: All network traffic encrypted
+- **Input Validation**: Comprehensive data sanitization
+- **Secure Derivation**: Industry-standard BIP44 key paths
 
 ## Development & Testing
 
@@ -153,18 +155,23 @@ android/
 
 We welcome contributions! Please:
 
-1. Fork the repository
+1. Fork the [SwipeLaunch repository](https://github.com/SwipeLaunch)
 2. Create a feature branch (`git checkout -b feature/NewFeature`)
 3. Follow Kotlin coding standards
 4. Add comprehensive tests
 5. Submit a pull request
 
+**Get Involved:**
+- [Join our waitlist](https://swipelaunch.fun/) for early access
+- Follow [@Swipe_Launch](https://x.com/Swipe_Launch) for updates
+- Share our [demo video](https://youtube.com/shorts/E-IYLk6X7b0) with the community
+
 ## Performance Metrics
 
-- **⚡ Load Time**: < 1.5 seconds
-- **🔄 Real-time Updates**: < 100ms latency
-- **💾 Memory Efficient**: < 50MB average usage
-- **🔋 Battery Optimized**: Background processing minimized
+- **Load Time**: < 1.5 seconds
+- **Real-time Updates**: < 100ms latency
+- **Memory Usage**: < 50MB average usage
+- **Battery Optimization**: Background processing minimized
 
 ## Roadmap
 
@@ -190,10 +197,12 @@ MIT License - See LICENSE file for details.
 
 ## Support & Community
 
-- **Documentation**: Comprehensive guides and API references
-- **Community**: Active Discord and Telegram channels
-- **Support**: Responsive technical support team
-- **Updates**: Regular feature releases and security patches
+- **🌐 Website**: [swipelaunch.fun](https://swipelaunch.fun/) | [swipelaunch.xyz](https://swipelaunch.xyz/)
+- **🎥 Demo Video**: [Watch on YouTube](https://youtube.com/shorts/E-IYLk6X7b0)
+- **🎯 Pitch Deck**: [Full Presentation](https://youtu.be/aKySJUk3rM0)
+- **🐦 Social**: Follow [@Swipe_Launch](https://x.com/Swipe_Launch) on X
+- **🐙 Source Code**: [GitHub Organization](https://github.com/SwipeLaunch)
+- **📧 Support**: Contact via website or social channels
 
 ## Acknowledgments
 
@@ -208,3 +217,10 @@ MIT License - See LICENSE file for details.
 **Last Updated**: August 4, 2025  
 **Status**: Production Ready with SMS Integration  
 **Compatibility**: Solana Phone, Android 7.0+
+
+**🚀 Experience SwipeLaunch:**
+- **📱 Join Waitlist**: [swipelaunch.fun](https://swipelaunch.fun/)
+- **🎬 Watch Demo**: [YouTube Short](https://youtube.com/shorts/E-IYLk6X7b0)
+- **🎯 Full Pitch**: [YouTube Presentation](https://youtu.be/aKySJUk3rM0)
+- **💻 Source Code**: [GitHub/SwipeLaunch](https://github.com/SwipeLaunch)
+- **🐦 Updates**: [@Swipe_Launch](https://x.com/Swipe_Launch)
