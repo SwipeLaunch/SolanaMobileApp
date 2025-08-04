@@ -175,12 +175,6 @@ Run the test suite:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Contact & Support
-
-- **Developer**: [Your Name]
-- **Email**: [your.email@example.com]
-- **GitHub**: [@yourusername](https://github.com/yourusername)
-- **Issues**: [Report bugs](https://github.com/yourusername/SwipeLaunch/issues)
 
 ## Acknowledgments
 
