@@ -173,23 +173,6 @@ We welcome contributions! Please:
 - **Memory Usage**: < 50MB average usage
 - **Battery Optimization**: Background processing minimized
 
-## Roadmap
-
-### Phase 1 (Current)
-- ✅ SMS Seed Vault integration
-- ✅ Multi-wallet support
-- ✅ Real-time data synchronization
-
-### Phase 2 (Upcoming)
-- 🔄 Advanced analytics dashboard
-- 🔄 Push notifications for presale alerts
-- 🔄 Cross-platform token sharing
-- 🔄 Enhanced social features
-
-### Phase 3 (Future)
-- 🔄 DeFi protocol integrations
-- 🔄 NFT marketplace features
-- 🔄 Advanced portfolio tracking
 
 ## License
 
