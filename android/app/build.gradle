@@ -2,6 +2,13 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "org.jetbrains.kotlin.plugin.serialization"
 
+// Load secrets from properties file
+def secretsPropertiesFile = rootProject.file("secrets.properties")
+def secretsProperties = new Properties()
+if (secretsPropertiesFile.exists()) {
+    secretsProperties.load(new FileInputStream(secretsPropertiesFile))
+}
+
 android {
     compileSdk 34
     
@@ -12,6 +19,10 @@ android {
         targetSdkVersion 34
         versionCode 1
         versionName "1.0.0"
+        
+        // Add secrets as build config fields
+        buildConfigField "String", "SUPABASE_URL", "\"${secretsProperties.getProperty('SUPABASE_URL', '')}\""
+        buildConfigField "String", "SUPABASE_ANON_KEY", "\"${secretsProperties.getProperty('SUPABASE_ANON_KEY', '')}\""
     }
     
     signingConfigs {
@@ -26,12 +37,20 @@ android {
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
+            buildConfigField "String", "SUPABASE_URL", "\"${secretsProperties.getProperty('SUPABASE_URL', '')}\""
+            buildConfigField "String", "SUPABASE_ANON_KEY", "\"${secretsProperties.getProperty('SUPABASE_ANON_KEY', '')}\""
         }
         release {
             signingConfig signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            buildConfigField "String", "SUPABASE_URL", "\"${secretsProperties.getProperty('SUPABASE_URL', '')}\""
+            buildConfigField "String", "SUPABASE_ANON_KEY", "\"${secretsProperties.getProperty('SUPABASE_ANON_KEY', '')}\""
         }
+    }
+    
+    buildFeatures {
+        buildConfig true
     }
     
     compileOptions {
