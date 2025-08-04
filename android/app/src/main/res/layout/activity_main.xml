@@ -83,4 +83,20 @@
         app:itemTextColor="#9945FF"
         app:menu="@menu/bottom_navigation" />
 
+    <!-- Floating Action Button for Wallet Connection (Profile Page Only) -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/walletConnectionFab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:layout_marginBottom="100dp"
+        android:src="@android:drawable/ic_menu_manage"
+        android:backgroundTint="#9945FF"
+        android:tint="#FFFFFF"
+        android:alpha="0.9"
+        android:elevation="6dp"
+        android:contentDescription="Connect Wallet"
+        android:visibility="visible" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
